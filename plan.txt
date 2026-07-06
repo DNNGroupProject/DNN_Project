@@ -1,0 +1,7 @@
+Title: Improved architecture for semantic segmentation of forest cover 
+       in aerial images.
+
+https://arxiv.org/html/2403.
+
+Find performing architectures. 
+Find key evaluation metrics .
