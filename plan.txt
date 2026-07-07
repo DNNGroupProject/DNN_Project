@@ -1,285 +1,254 @@
-Title: Design a lightweight yet accurate semantic segmentation architecture for aerial forest 
-imagery that achieves higher mIoU while reducing computational cost.
+╔══════════════════════════════════════════════════════════════════════════╗
+║  Title: Design a lightweight yet accurate semantic segmentation          ║
+║         architecture for aerial forest imagery that achieves higher      ║
+║         mIoU while reducing computational cost.                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+  You optimize:
+    • Accuracy
+    • Parameters
+    • FLOPs
+    • Inference speed
+    • Memory
+
+══════════════════════════════════════════════════════════════════════════════
+
+  STEP 1:
+  ────────
+  Everyone reproduces baseline.
+  Everyone should understand
+
+    • dataset
+    • preprocessing
+    • metrics
+    • training
+
+  Now everyone starts from exactly the same point.
+
+══════════════════════════════════════════════════════════════════════════════
+
+  STEP 2:
+  ────────
+  Now split into five research directions.
+  improve model architecture
+  Now nobody interferes with each other.
+  Each person modifies only their own branch of improvmeent while other
+  parts remain identical with baseline code.
 
+    main
+    │
+    ├── encoder_branch
+    ├── decoder_branch
+    ├── attention_branch
+    ├── loss_branch
+    └── efficiency_branch
+
+══════════════════════════════════════════════════════════════════════════════
+
+  Instead aim for a focused contribution such as:
 
-You optimize:
-Accuracy
-Parameters
-FLOPs
-Inference speed
-Memory
+    • Lightweight multi-scale feature fusion
+    • Dual attention with efficient convolutions
+    • Boundary-aware decoder
+    • Adaptive skip connections
+    • Dynamic feature aggregation
+    • Lightweight context module
+    • Hybrid CNN–Transformer block
+    • Edge-guided segmentation
+    • Frequency-aware feature fusion
+    • Multi-scale attention with depthwise convolutions
+
+══════════════════════════════════════════════════════════════════════════════
+
+  STEP 3:
+  ────────
+  Individual work to be done.
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Member 1  —  Encoder branch                                        │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  Encoder improvement
 
+  Examples:
+    • EfficientNet
+    • MobileNetV3
+    • ConvNeXt Tiny
+    • FasterNet
+    • RepVGG
 
------------------------------------------------------------
+  Goal:
+    Reduce computation.
+
+  Everything else stays identical.
+    • Same decoder
+    • Same loss
+    • Same optimizer
+    • Same attention
 
-step 1:
-Everyone reproduces baseline.
-Everyone should understand
+  Only encoder changes.
 
-dataset
-preprocessing
-metrics
-training
+──────────────────────────────────────────────────────────────────────────────
 
-Now everyone starts from exactly the same point.
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Member 2  —  Decoder branch                                        │
+  └─────────────────────────────────────────────────────────────────────┘
 
-----------------------------------------------------------
-step 2:
-Now split into five research directions.
-improve model architecture
-Now nobody interferes with each other.
-Each person modifies only their own branch of improvmeent while other parts remain identical with baseline code.
+  Decoder improvement
 
-main
-│
-├── encoder_branch
-├── decoder_branch
-├── attention_branch
-├── loss_branch
-└── efficiency_branch
+  Examples:
+    • U-Net++
+    • DeepLab decoder
+    • Feature Pyramid
+    • BiFPN
+    • Light decoder
 
-----------------------------------------------------------
-Instead aim for a focused contribution such as:
+  Goal:
+    Better boundary prediction.
 
-Lightweight multi-scale feature fusion
-Dual attention with efficient convolutions
-Boundary-aware decoder
-Adaptive skip connections
-Dynamic feature aggregation
-Lightweight context module
-Hybrid CNN–Transformer block
-Edge-guided segmentation
-Frequency-aware feature fusion
-Multi-scale attention with depthwise convolutions
+  Nothing else changes.
 
+──────────────────────────────────────────────────────────────────────────────
 
-Member 1
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Member 3  —  Attention branch                                      │
+  └─────────────────────────────────────────────────────────────────────┘
 
-Encoder branch
+  Attention mechanisms
 
-He asks:
+  Examples:
+    • SE block
+    • CBAM
+    • Coordinate Attention
+    • ECA
+    • EMA Attention
 
-Can I improve feature extraction while keeping computation low?
-He experiments with
+  Goal:
+    Improve feature extraction.
 
-Baseline encoder
-↓
-MobileNetV3
-↓
-ConvNeXt Tiny
+──────────────────────────────────────────────────────────────────────────────
 
-↓
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Member 4  —  Loss function                                         │
+  └─────────────────────────────────────────────────────────────────────┘
 
-FasterNet
+  Loss functions
 
-↓
+  Examples:
+    • Dice
+    • Focal
+    • Lovasz
+    • Tversky
+    • Boundary Loss
 
-RepVGG
+  Goal:
+    Improve segmentation accuracy.
 
-Everything else stays identical.
+──────────────────────────────────────────────────────────────────────────────
 
-Same decoder
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Member 5  —  Efficiency                                            │
+  └─────────────────────────────────────────────────────────────────────┘
 
-Same loss
+  HEfficiency
 
-Same optimizer
+  Examples:
+    • Depthwise convolution
+    • Ghost modules
+    • Pruning
+    • Quantization
+    • Knowledge Distillation
 
-Same attention
+  Goal:
+    Reduce FLOPs.
 
-Only encoder changes.
+══════════════════════════════════════════════════════════════════════════════
 
-Member 2
+  STEP 4:
+  ────────
+  Each member presents
 
-Decoder branch
+    • Idea
+    • Motivation
+    • Implementation
+    • Results
+    • Problems
 
-He asks
+══════════════════════════════════════════════════════════════════════════════
 
-Can I reconstruct object boundaries better?
+  PHASE 5:
+  ─────────
+  Now ask Can they work together?
 
-He tests
+  Suppose
 
-Baseline decoder
+    • Coordinate Attention worked well.
+    • Boundary Loss worked well.
+    • Light Decoder worked well.
 
-↓
+  Can we combine them?
 
-BiFPN
+  Create another branch.
+  Train again.
 
-↓
+  Now suppose result is great.
+  Now you have your proposed architecture.
 
-Light Decoder
+  Why don't we combine everything?
 
-↓
+  Sometimes improvements conflict.
+  Combine only the successful ideas.
 
-Feature Pyramid
+══════════════════════════════════════════════════════════════════════════════
 
-↓
+  PHASE 6:
+  ─────────
+  Now let's discuss the ablation study
 
-UNet++ Decoder
+  Many students misunderstand this.
 
-Nothing else changes.
+  An ablation study answers one question:
 
-Member 3
+    Which component of our proposed method actually contributes to the improvement?
 
-Attention branch
+  Suppose your final model is:
 
-Only attention changes.
+    Baseline
+            │
+            ▼
+    Coordinate Attention
+            │
+            ▼
+    Light Decoder
+            │
+            ▼
+    Boundary Loss
+            │
+            ▼
+    Ghost Module
 
-No attention
+  You claim
 
-↓
+    "Our architecture is better."
 
-SE
+  A reviewer immediately asks:
 
-↓
+    Which of these four changes actually made it better?
 
-CBAM
+  So you remove or add one component at a time and measure the effect.
 
-↓
+  | Model                          | mIoU     | Params | GFLOPs |
+  | ------------------------------ | -------- | ------ | ------ |
+  | Baseline                       | 72.1     | 22M    | 60     |
+  | Baseline + Attention           | 74.5     | 22.5M  | 62     |
+  | Baseline + Decoder             | 74.1     | 23M    | 65     |
+  | Baseline + Loss                | 73.2     | 22M    | 60     |
+  | Baseline + Efficiency          | 71.9     | 12M    | 35     |
+  | Baseline + Attention + Decoder | 75.2     | 23.5M  | 67     |
+  | Final (All Compatible Modules) | **75.8** | 18M    | 42     |
 
-Coordinate
+  This is exactly what reviewers want: proof that each design decision
+  is justified by experiments, not just that the final model happens to work.
 
-↓
+══════════════════════════════════════════════════════════════════════════════
 
-ECA
-
-Encoder
-
-same
-
-Decoder
-
-same
-
-Loss
-
-same
-
-Member 4
-
-Loss function
-
-Only training objective changes.
-
-Cross Entropy
-
-↓
-
-Dice
-
-↓
-
-Dice + CE
-
-↓
-
-Boundary Loss
-
-↓
-
-Lovasz
-
-Architecture is identical.
-
-Member 5
-
-Efficiency
-
-He doesn't care much about accuracy.
-
-His question is
-
-Can I make this model much smaller?
-
-He tries
-
-Depthwise Conv
-
-Ghost Module
-
-Channel pruning
-
-Knowledge Distillation
-
-Quantization
-
-
-
-
------------------------------------------------------------
-step 4: Each member presents
-
-Idea
-Motivation
-Implementation
-Results
-Problems
-
-
-
------------------------------------------------------------
-
-
-Phase 5
-
-Now ask Can they work together?
-
-Suppose
-
-Coordinate Attention worked well.
-Boundary Loss worked well.
-Light Decoder worked well.
-
-Can we combine them?
-
-Create another branch.
-Train again.
-
-Now suppose result is great.
-Now you have your proposed architecture.
-
-Why don't we combine everything?
-
-Sometimes improvements conflict.
-Combine only the successful ideas.
-
----------------------------------------------------------
-
-phase 6
-
-
-Now let's discuss the ablation study
-
-Many students misunderstand this.
-
-An ablation study answers one question:
-
-Which component of our proposed method actually contributes to the improvement?
-
-Suppose your final model is:
-
-Baseline
-        │
-        ▼
-Coordinate Attention
-        │
-        ▼
-Light Decoder
-        │
-        ▼
-Boundary Loss
-        │
-        ▼
-Ghost Module
-
-You claim
-
-"Our architecture is better."
-
-A reviewer immediately asks:
-
-Which of these four changes actually made it better?
-
-So you remove or add one component at a time and measure the effect.
-
-This is exactly what reviewers want: proof that each design decision 
-is justified by experiments, not just that the final model happens to work.
