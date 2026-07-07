@@ -1,7 +1,285 @@
-Title: Improved architecture for semantic segmentation of forest cover 
-       in aerial images.
+Title: Design a lightweight yet accurate semantic segmentation architecture for aerial forest 
+imagery that achieves higher mIoU while reducing computational cost.
 
-https://arxiv.org/html/2403.
 
-Find performing architectures. 
-Find key evaluation metrics .
+You optimize:
+Accuracy
+Parameters
+FLOPs
+Inference speed
+Memory
+
+
+-----------------------------------------------------------
+
+step 1:
+Everyone reproduces baseline.
+Everyone should understand
+
+dataset
+preprocessing
+metrics
+training
+
+Now everyone starts from exactly the same point.
+
+----------------------------------------------------------
+step 2:
+Now split into five research directions.
+improve model architecture
+Now nobody interferes with each other.
+Each person modifies only their own branch of improvmeent while other parts remain identical with baseline code.
+
+main
+│
+├── encoder_branch
+├── decoder_branch
+├── attention_branch
+├── loss_branch
+└── efficiency_branch
+
+----------------------------------------------------------
+Instead aim for a focused contribution such as:
+
+Lightweight multi-scale feature fusion
+Dual attention with efficient convolutions
+Boundary-aware decoder
+Adaptive skip connections
+Dynamic feature aggregation
+Lightweight context module
+Hybrid CNN–Transformer block
+Edge-guided segmentation
+Frequency-aware feature fusion
+Multi-scale attention with depthwise convolutions
+
+
+Member 1
+
+Encoder branch
+
+He asks:
+
+Can I improve feature extraction while keeping computation low?
+He experiments with
+
+Baseline encoder
+↓
+MobileNetV3
+↓
+ConvNeXt Tiny
+
+↓
+
+FasterNet
+
+↓
+
+RepVGG
+
+Everything else stays identical.
+
+Same decoder
+
+Same loss
+
+Same optimizer
+
+Same attention
+
+Only encoder changes.
+
+Member 2
+
+Decoder branch
+
+He asks
+
+Can I reconstruct object boundaries better?
+
+He tests
+
+Baseline decoder
+
+↓
+
+BiFPN
+
+↓
+
+Light Decoder
+
+↓
+
+Feature Pyramid
+
+↓
+
+UNet++ Decoder
+
+Nothing else changes.
+
+Member 3
+
+Attention branch
+
+Only attention changes.
+
+No attention
+
+↓
+
+SE
+
+↓
+
+CBAM
+
+↓
+
+Coordinate
+
+↓
+
+ECA
+
+Encoder
+
+same
+
+Decoder
+
+same
+
+Loss
+
+same
+
+Member 4
+
+Loss function
+
+Only training objective changes.
+
+Cross Entropy
+
+↓
+
+Dice
+
+↓
+
+Dice + CE
+
+↓
+
+Boundary Loss
+
+↓
+
+Lovasz
+
+Architecture is identical.
+
+Member 5
+
+Efficiency
+
+He doesn't care much about accuracy.
+
+His question is
+
+Can I make this model much smaller?
+
+He tries
+
+Depthwise Conv
+
+Ghost Module
+
+Channel pruning
+
+Knowledge Distillation
+
+Quantization
+
+
+
+
+-----------------------------------------------------------
+step 4: Each member presents
+
+Idea
+Motivation
+Implementation
+Results
+Problems
+
+
+
+-----------------------------------------------------------
+
+
+Phase 5
+
+Now ask Can they work together?
+
+Suppose
+
+Coordinate Attention worked well.
+Boundary Loss worked well.
+Light Decoder worked well.
+
+Can we combine them?
+
+Create another branch.
+Train again.
+
+Now suppose result is great.
+Now you have your proposed architecture.
+
+Why don't we combine everything?
+
+Sometimes improvements conflict.
+Combine only the successful ideas.
+
+---------------------------------------------------------
+
+phase 6
+
+
+Now let's discuss the ablation study
+
+Many students misunderstand this.
+
+An ablation study answers one question:
+
+Which component of our proposed method actually contributes to the improvement?
+
+Suppose your final model is:
+
+Baseline
+        │
+        ▼
+Coordinate Attention
+        │
+        ▼
+Light Decoder
+        │
+        ▼
+Boundary Loss
+        │
+        ▼
+Ghost Module
+
+You claim
+
+"Our architecture is better."
+
+A reviewer immediately asks:
+
+Which of these four changes actually made it better?
+
+So you remove or add one component at a time and measure the effect.
+
+This is exactly what reviewers want: proof that each design decision 
+is justified by experiments, not just that the final model happens to work.
