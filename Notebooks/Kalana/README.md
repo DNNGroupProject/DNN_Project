@@ -1,4 +1,4 @@
-# Kalana Baseline Segmentation
+# Baseline Segmentation
 
 This folder contains the simple CNN segmentation baseline in `main.py`.
 
