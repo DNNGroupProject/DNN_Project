@@ -48,17 +48,22 @@ IMG_SIZE = 256
 
 def find_mask_path(mask_folder, filename):
     """Return the best matching mask path for a given image filename."""
-    direct_path = os.path.join(mask_folder, filename)
-    if os.path.exists(direct_path):
-        return direct_path
-
-    stem = os.path.splitext(filename)[0]
+    stem, ext = os.path.splitext(filename)
     common_exts = [".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"]
+    candidate_stems = [stem]
 
-    for ext in common_exts:
-        candidate = os.path.join(mask_folder, stem + ext)
-        if os.path.exists(candidate):
-            return candidate
+    # Dataset convention: image names use `_sat_` and masks use `_mask_`.
+    if "_sat_" in stem:
+        candidate_stems.append(stem.replace("_sat_", "_mask_"))
+
+    # Try same extension first, then fallback extensions for each stem candidate.
+    ext_order = [ext] + [e for e in common_exts if e != ext]
+
+    for candidate_stem in candidate_stems:
+        for candidate_ext in ext_order:
+            candidate = os.path.join(mask_folder, candidate_stem + candidate_ext)
+            if os.path.exists(candidate):
+                return candidate
 
     return None
 
