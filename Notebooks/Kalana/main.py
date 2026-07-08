@@ -3,7 +3,7 @@
 Simple CNN Semantic Segmentation
 ----------------------------------------------------------
 
-This is intentionally written as a BEGINNER BASELINE.
+This is a BASELINE.
 
 No U-Net
 No Transfer Learning
@@ -14,7 +14,6 @@ No Skip Connections
 The purpose is to understand how semantic segmentation works
 before moving to research models.
 
-Author: Your Name
 ==========================================================
 """
 
