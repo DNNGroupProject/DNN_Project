@@ -1,0 +1,6 @@
+accuracy: 0.811119
+dice_coef: 0.767669
+iou_coef: 0.734895
+loss: 0.331940
+precision: 0.794277
+recall: 0.912189
