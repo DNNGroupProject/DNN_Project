@@ -10,6 +10,9 @@ Outputs saved to Lasana/results/:
   - test_metrics.txt      : final test-set scores
   - training_log.csv      : per-epoch metrics
 
+
+
+
 Checkpoints saved to Lasana/checkpoints/:
   - lasana_unet_best.keras : best val IoU checkpoint
   - lasana_unet_last.keras : last epoch checkpoint
