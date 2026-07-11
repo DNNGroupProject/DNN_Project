@@ -5,3 +5,23 @@ Your contribution should include:
 •	Mixing-based augmentation: MixUp, CutMix, Mosaic. 
 •	Ablation study: Compare each augmentation strategy individually and in combination using IoU, Dice, Precision, Recall, and Accuracy. 
 This aligns well with the Data Innovation role described in your project plan and provides a solid, publishable experimental section. 
+
+Raw Dataset
+      │
+      ▼
+Data Preprocessing
+      │
+      ▼
+Data Augmentation  ← Your main research
+      │
+      ▼
+(Optional) Synthetic Data Generation
+      │
+      ▼
+Train/Validation Dataset
+      │
+      ▼
+Architecture (Member 1's model)
+      │
+      ▼
+Training (Member 2's loss)

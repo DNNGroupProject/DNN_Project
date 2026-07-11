@@ -250,9 +250,74 @@ print("Copy complete. IMAGE_FOLDER and MASK_FOLDER updated to local paths.")
 print("New IMAGE_FOLDER:", IMAGE_FOLDER)
 print("New MASK_FOLDER :", MASK_FOLDER)
 
+# ## 3 · Load image–mask paths (Memory-Optimized)
+#
+# # IMPORTANT: The previous `load_dataset` function in this cell was loading all images and masks into RAM, causing memory errors. This cell has been replaced.
+#
+# # The new approach for loading data efficiently is handled by:
+# # - **Cell `XvdjTvUcFO8P`**: Defines `load_dataset_paths` to collect only image and mask file paths.
+# # - **Cell `PvkiKtYd_PrA`**: Uses `tf.data.Dataset` with `_parse_image_mask_pair` and `make_dataset` to load, preprocess, and augment images and masks on-the-fly in batches, avoiding large memory consumption.
+#
+# # Please ensure you run cell `XvdjTvUcFO8P` and `PvkiKtYd_PrA` for the new data loading pipeline. Do NOT run any other cells that define or call the old, memory-intensive `load_dataset` function.
 
+# This cell's content is intended to be explanatory markdown text, not executable Python code.
+# If you are seeing this, it means the cell was executed as a 'Code' cell.
+# Its original purpose was to guide you on the memory-optimized data loading.
+# Please ensure you run cells `XvdjTvUcFO8P` and `PvkiKtYd_PrA` for the new data loading pipeline.
+# Do NOT run any other cells that define or call the old, memory-intensive `load_dataset` function, as they will cause memory errors.
+
+pass # This 'pass' statement makes the cell valid Python code if accidentally run.
+
+# This cell previously defined and called the 'load_dataset' function, which loaded all images into memory.
+# This approach caused '12GB RAM exceeds' errors. This cell has been disabled.
+#
+# The memory-optimized data loading is now handled by:
+# - Cell 'XvdjTvUcFO8P': Defines 'load_dataset_paths' to collect only image and mask file paths.
+# - Cell 'PvkiKtYd_PrA': Uses 'tf.data.Dataset' to load, preprocess, and augment data on-the-fly.
+#
+# Please ensure you run cell 'XvdjTvUcFO8P' and 'PvkiKtYd_PrA' for the new data loading pipeline.
+# Do NOT run this cell or any other cells that define or call the old, memory-intensive 'load_dataset' function.
+
+pass # This 'pass' statement makes the cell valid Python code if accidentally run.
+
+# This cell previously defined and called the 'load_dataset' function, which loaded all images into memory.
+# This approach caused '12GB RAM exceeds' errors. This cell has been disabled.
+#
+# The memory-optimized data loading is now handled by:
+# - Cell 'XvdjTvUcFO8P': Defines 'load_dataset_paths' to collect only image and mask file paths.
+# - Cell 'PvkiKtYd_PrA': Uses 'tf.data.Dataset' to load, preprocess, and augment data on-the-fly.
+#
+# Please ensure you run cell 'XvdjTvUcFO8P' and 'PvkiKtYd_PrA' for the new data loading pipeline.
+# Do NOT run this cell or any other cells that define or call the old, memory-intensive 'load_dataset' function.
+
+pass # This 'pass' statement makes the cell valid Python code if accidentally run.
+
+# This cell previously defined and called the 'load_dataset' function, which loaded all images into memory.
+# This approach caused '12GB RAM exceeds' errors. This cell has been disabled.
+#
+# The memory-optimized data loading is now handled by:
+# - Cell 'XvdjTvUcFO8P': Defines 'load_dataset_paths' to collect only image and mask file paths.
+# - Cell 'PvkiKtYd_PrA': Uses 'tf.data.Dataset' to load, preprocess, and augment data on-the-fly.
+#
+# Please ensure you run cell 'XvdjTvUcFO8P' and 'PvkiKtYd_PrA' for the new data loading pipeline.
+# Do NOT run this cell or any other cells that define or call the old, memory-intensive 'load_dataset' function.
+
+pass # This 'pass' statement makes the cell valid Python code if accidentally run.
+
+# This cell previously defined and called the 'load_dataset' function, which loaded all images into memory.
+# This approach caused '12GB RAM exceeds' errors. This cell has been disabled.
+#
+# The memory-optimized data loading is now handled by:
+# - Cell 'XvdjTvUcFO8P': Defines 'load_dataset_paths' to collect only image and mask file paths.
+# - Cell 'PvkiKtYd_PrA': Uses 'tf.data.Dataset' to load, preprocess, and augment data on-the-fly.
+#
+# Please ensure you run cell 'XvdjTvUcFO8P' and 'PvkiKtYd_PrA' for the new data loading pipeline.
+# Do NOT run this cell or any other cells that define or call the old, memory-intensive 'load_dataset' function.
+
+pass # This 'pass' statement makes the cell valid Python code if accidentally run.
 
 import os
+
 # Explicitly defining IMAGE_FOLDER and MASK_FOLDER for this cell's scope
 # This assumes the data was successfully copied to local storage in cell 6a6424ec.
 # If cell 6a6424ec has not been run, these paths may not contain the data.
