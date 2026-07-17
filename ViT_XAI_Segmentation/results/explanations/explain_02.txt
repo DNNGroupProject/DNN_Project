@@ -1,0 +1,5 @@
+Decision explanation (guided concepts):
+  - open_clearing: 86.3%
+  - forest_boundary: 6.5%
+  - sparse_trees: 4.4%
+Pseudo-label z: [0.44200000166893005, 0.16599999368190765, 1.0, 0.0, 0.15000000596046448]

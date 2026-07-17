@@ -1,0 +1,12 @@
+﻿method,thr,iou,dice,acc,ece,delta_iou_pct,ms_per_image,note
+0_baseline_thr0.5,0.5,0.737858,0.8492,0.8111,0.0270,0.0,116.6,Lasana default
+1_thr_star,0.65,0.7383,0.8494,0.8180,0.0270,0.05,116.6,t*=0.65 from val
+2_thr_star_morph,0.5,0.7383,0.8495,0.8182,0.1818,0.07,116.6,open+close+rm small
+3_tta4,0.65,0.7382,0.8494,0.8185,0.0281,0.05,466.4,4 views avg
+4_tta4_morph,0.5,0.7382,0.8494,0.8186,0.1814,0.05,466.4,TTA+morph
+5_confidence_adaptive_thr,0.5,0.7329,0.8459,0.8183,0.1817,-0.67,116.6,stricter thr on high entropy
+6_temperature_scaled,0.65,0.7383,0.8494,0.8180,0.0270,0.05,116.6,T* from val ECE
+7_bilateral_refine,0.65,0.7383,0.8494,0.8183,0.0277,0.06,116.6,CRF substitute
+8_lbr_net,0.65,0.7270,0.8419,0.8172,0.0408,-1.48,116.6,novel tiny refiner (8 ep)
+9_tta4_lbr_net,0.65,0.7279,0.8425,0.8180,0.0383,-1.36,466.4,TTA then LBR
+10_lbr_morph,0.5,0.7268,0.8418,0.8172,0.1828,-1.50,116.6,LBR+morph
