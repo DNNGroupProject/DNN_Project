@@ -1,0 +1,14 @@
+{
+  "model": "U-Net (CNN baseline)",
+  "dice": 0.8492,
+  "iou": 0.7379,
+  "f1": 0.8492,
+  "precision": 0.7943,
+  "recall": 0.9122,
+  "pixel_acc": 0.8111,
+  "aamo": "n/a",
+  "params": 1951105,
+  "gflops": "n/a",
+  "fps": 3.48,
+  "ms_per_image": 287.7
+}

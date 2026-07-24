@@ -1,0 +1,5 @@
+model,n_seeds,dice,iou,f1,aamo,params,gflops
+U-Net (CNN baseline),1,0.8492 ± 0.0000,0.7379 ± 0.0000,0.8492 ± 0.0000,n/a,1951105,n/a
+SegFormer-B0 (no attention loss),0,-,-,-,pending,n/a,n/a
+SegFormer-B0 + Attention Consistency Loss,0,-,-,-,pending,n/a,n/a
+SegFormer-B0 + Attention Consistency + Boundary Loss,0,-,-,-,pending,n/a,n/a
