@@ -1,0 +1,10 @@
+U-Net baseline (from scratch) - Forest Segmented, full dataset
+train/val/test = 3576/766/766
+epochs=20 batch_size=8 lr=0.001 img_size=256 seed=42
+best_val_dice: 0.8661
+test_loss: 0.4302
+test_dice: 0.8563
+test_iou:  0.7534
+params_total: 31.04 M
+params_trainable: 31.04 M
+gflops @ 1x3x256x256: 109.48
