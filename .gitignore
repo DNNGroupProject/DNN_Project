@@ -4,5 +4,7 @@ Notebooks/Kalana/images
 Notebooks/Kalana/masks
 Notebooks/Kalana/meta_data.csv
 Lasana/dataset/
-
-*.keras
+previous research papers/
+docs/
+**/__pycache__/
+*.pyc

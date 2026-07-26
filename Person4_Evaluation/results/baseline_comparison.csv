@@ -1,0 +1,5 @@
+model,dice,iou,f1,precision,recall,pixel_acc,aamo,params,gflops,fps,ms_per_image
+U-Net (CNN baseline),0.8492,0.7379,0.8492,0.7943,0.9122,0.8111,n/a,1951105,n/a,3.48,287.7
+SegFormer-B0 (no attention loss),-,-,-,-,-,-,pending,-,-,-,-
+SegFormer-B0 + Attention Consistency Loss,-,-,-,-,-,-,pending,-,-,-,-
+SegFormer-B0 + Attention Consistency + Boundary Loss,-,-,-,-,-,-,pending,-,-,-,-
