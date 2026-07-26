@@ -1,4 +1,6 @@
 data/
+Dataset/
+forest_segmented.zip
 .venv/
 Notebooks/Kalana/images
 Notebooks/Kalana/masks
