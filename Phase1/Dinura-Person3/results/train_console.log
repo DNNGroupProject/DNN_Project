@@ -1,0 +1,101 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] You passed `num_labels=2` which is incompatible to the `id2label` map of length `1000`.
+
+============================================================
+Training variant: vanilla
+============================================================
+train=400 val=60 (test split reserved for eval_segformer.py)
+Loading weights:   0%|          | 0/192 [00:00<?, ?it/s]Loading weights: 100%|##########| 192/192 [00:00<00:00, 34555.09it/s]
+[transformers] [1mSegformerForSemanticSegmentation LOAD REPORT[0m from: nvidia/mit-b0
+Key                                                     | Status     | 
+--------------------------------------------------------+------------+-
+classifier.bias                                         | UNEXPECTED | 
+classifier.weight                                       | UNEXPECTED | 
+decode_head.classifier.bias                             | MISSING    | 
+decode_head.batch_norm.num_batches_tracked              | MISSING    | 
+decode_head.linear_projections.{0, 1, 2, 3}.proj.bias   | MISSING    | 
+decode_head.batch_norm.running_var                      | MISSING    | 
+decode_head.linear_projections.{0, 1, 2, 3}.proj.weight | MISSING    | 
+decode_head.batch_norm.bias                             | MISSING    | 
+decode_head.batch_norm.weight                           | MISSING    | 
+decode_head.classifier.weight                           | MISSING    | 
+decode_head.linear_fuse.weight                          | MISSING    | 
+decode_head.batch_norm.running_mean                     | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+[transformers] You passed `num_labels=2` which is incompatible to the `id2label` map of length `1000`.
+epoch 01/8 | train_dice=0.7148 val_dice=0.7293 val_iou=0.6553 | 85.0s
+epoch 02/8 | train_dice=0.7696 val_dice=0.7319 val_iou=0.6607 | 77.8s
+epoch 03/8 | train_dice=0.7928 val_dice=0.7440 val_iou=0.6715 | 84.6s
+epoch 04/8 | train_dice=0.7963 val_dice=0.7467 val_iou=0.6731 | 81.5s
+epoch 05/8 | train_dice=0.8289 val_dice=0.7463 val_iou=0.6742 | 84.1s
+epoch 06/8 | train_dice=0.8474 val_dice=0.7398 val_iou=0.6706 | 75.0s
+epoch 07/8 | train_dice=0.8578 val_dice=0.7449 val_iou=0.6687 | 92.6s
+epoch 08/8 | train_dice=0.8592 val_dice=0.7246 val_iou=0.6518 | 88.5s
+Wrote C:\Users\DELL\Sem5_Projects\DNN-Project\Phase1\Dinura-Person3\results\training_log_vanilla.csv
+Wrote checkpoints/segformer_b0_vanilla_best.pt (val_dice=0.7467)
+{
+  "variant": "vanilla",
+  "n_train": 400,
+  "n_val": 60,
+  "epochs": 8,
+  "batch_size": 4,
+  "lr": 6e-05,
+  "lambda2": null,
+  "att_mode": null,
+  "best_val_dice": 0.7467223763465881,
+  "final_val_dice": 0.724565327167511,
+  "final_val_iou": 0.6518194556236268,
+  "wall_clock_s": 669.5
+}
+
+============================================================
+Training variant: att
+============================================================
+train=400 val=60 (test split reserved for eval_segformer.py)
+Loading weights:   0%|          | 0/192 [00:00<?, ?it/s]Loading weights: 100%|##########| 192/192 [00:00<00:00, 15044.86it/s]
+[transformers] [1mSegformerForSemanticSegmentation LOAD REPORT[0m from: nvidia/mit-b0
+Key                                                     | Status     | 
+--------------------------------------------------------+------------+-
+classifier.bias                                         | UNEXPECTED | 
+classifier.weight                                       | UNEXPECTED | 
+decode_head.classifier.bias                             | MISSING    | 
+decode_head.batch_norm.num_batches_tracked              | MISSING    | 
+decode_head.linear_projections.{0, 1, 2, 3}.proj.bias   | MISSING    | 
+decode_head.batch_norm.running_var                      | MISSING    | 
+decode_head.linear_projections.{0, 1, 2, 3}.proj.weight | MISSING    | 
+decode_head.batch_norm.bias                             | MISSING    | 
+decode_head.batch_norm.weight                           | MISSING    | 
+decode_head.classifier.weight                           | MISSING    | 
+decode_head.linear_fuse.weight                          | MISSING    | 
+decode_head.batch_norm.running_mean                     | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+epoch 01/8 | train_dice=0.7176 val_dice=0.6932 val_iou=0.6148 | 335.5s
+epoch 02/8 | train_dice=0.7549 val_dice=0.7055 val_iou=0.6335 | 342.8s
+epoch 03/8 | train_dice=0.7697 val_dice=0.7063 val_iou=0.6362 | 348.3s
+epoch 04/8 | train_dice=0.7874 val_dice=0.7159 val_iou=0.6453 | 338.4s
+epoch 05/8 | train_dice=0.7972 val_dice=0.7102 val_iou=0.6381 | 342.5s
+epoch 06/8 | train_dice=0.8269 val_dice=0.7193 val_iou=0.6475 | 338.6s
+epoch 07/8 | train_dice=0.8310 val_dice=0.7209 val_iou=0.6498 | 347.1s
+epoch 08/8 | train_dice=0.8529 val_dice=0.7229 val_iou=0.6470 | 329.9s
+Wrote C:\Users\DELL\Sem5_Projects\DNN-Project\Phase1\Dinura-Person3\results\training_log_att.csv
+Wrote checkpoints/segformer_b0_att_best.pt (val_dice=0.7229)
+{
+  "variant": "att",
+  "n_train": 400,
+  "n_val": 60,
+  "epochs": 8,
+  "batch_size": 1,
+  "lr": 6e-05,
+  "lambda2": 0.3,
+  "att_mode": "mse",
+  "best_val_dice": 0.7228729394152368,
+  "final_val_dice": 0.7228729394152368,
+  "final_val_iou": 0.6470485025128577,
+  "wall_clock_s": 2723.6
+}

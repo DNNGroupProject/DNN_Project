@@ -1,0 +1,14 @@
+{
+  "variant": "att",
+  "n_train": 400,
+  "n_val": 60,
+  "epochs": 8,
+  "batch_size": 1,
+  "lr": 6e-05,
+  "lambda2": 0.3,
+  "att_mode": "mse",
+  "best_val_dice": 0.7228729394152368,
+  "final_val_dice": 0.7228729394152368,
+  "final_val_iou": 0.6470485025128577,
+  "wall_clock_s": 2723.6
+}

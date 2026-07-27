@@ -10,3 +10,7 @@ previous research papers/
 docs/
 **/__pycache__/
 *.pyc
+.venv/
+
+images/*
+masks/*
