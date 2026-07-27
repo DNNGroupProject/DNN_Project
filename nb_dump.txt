@@ -1,0 +1,130 @@
+--- markdown ---
+# Forest Segmentation ? SegFormer-B0 Baseline (Colab)
+
+Week 1-2 goal: train a plain SegFormer-B0 (no attention loss yet) on the full
+dataset and report Dice / IoU. Every piece here was already verified locally
+in VS Code on a small subset ? this notebook just scales it up with a real
+GPU and the ful
+--- markdown ---
+## Step 0: Mount Google Drive
+
+Upload your `Kalana` folder (with `images/` and `masks/` subfolders) to Google
+Drive first, then mount it here. Adjust `DATA_ROOT` below to match wherever
+you placed it in your Drive.
+--- code ---
+from google.colab import drive
+drive.mount('/content/drive')
+--- code ---
+!pip install -q transformers accelerate
+--- markdown ---
+## Step 1: Config + verify filename pairing
+--- code ---
+import os
+from pathlib import Path
+
+# ?? Config ????????????????????????????????????????????????
+# Adjust this path to wherever "Kalana" ended up inside your Drive.
+# Example: "/content/drive/MyDrive/Kalana"
+DATA_ROOT = Path("/content/drive/MyDrive/Kalana")
+IMAGES_DIR = DATA_ROOT / "images"
+MASKS_DI
+--- code ---
+def mask_name_to_image_name(mask_filename):
+    """Converts '855_mask_01.jpg' -> '855_sat_01.jpg'."""
+    return mask_filename.replace("_mask", "_sat")
+
+# Full-dataset pairing check before we trust it on everything
+missing = []
+for m in mask_files:
+    expected_image = mask_name_to_image_name(m)
+   
+--- markdown ---
+## Step 2: Dataset class
+
+Same logic verified locally ? resize, normalize, binarize the mask.
+--- code ---
+import numpy as np
+import torch
+from PIL import Image
+from torch.utils.data import Dataset
+
+class ForestSegDataset(Dataset):
+    def __init__(self, mask_filenames, images_dir, masks_dir, img_size=256):
+        self.mask_filenames = mask_filenames
+        self.images_dir = images_dir
+        self.mas
+--- markdown ---
+## Step 3: Train / val / test split
+--- code ---
+import random
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+def make_splits():
+    all_files = sorted(mask_files)
+    random.shuffle(all_files)
+
+    n = len(all_files)
+    n_val = int(n * VAL_SPLIT)
+    n_test = int(n * TEST_SPLIT)
+
+    val_files = 
+--- markdown ---
+## Step 4: Model + Dice/IoU metric
+
+Same architecture verified locally: pretrained MiT-B0 encoder + fresh 2-class decode head.
+--- code ---
+from transformers import SegformerForSemanticSegmentation
+import torch.nn.functional as F
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Running on: {device}")
+
+def build_model():
+    model = SegformerForSemanticSegmentation.from_pretrained(
+        "nvidia/mit-b0",
+        num_lab
+--- markdown ---
+## Step 5: DataLoaders + training loop
+
+This is the same loop verified locally on 10 images/5 epochs ? now scaled up to the full dataset and 20 epochs on GPU.
+--- code ---
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+train_ds = ForestSegDataset(train_files, IMAGES_DIR, MASKS_DIR, IMG_SIZE)
+val_ds = ForestSegDataset(val_files, IMAGES_DIR, MASKS_DIR, IMG_SIZE)
+test_ds = ForestSegDataset(test_files, IMAGES_DIR, MASKS_DIR, IMG_SIZE)
+
+train_loader = DataL
+--- code ---
+def run_epoch(model, loader, optimizer=None):
+    is_train = optimizer is not None
+    model.train() if is_train else model.eval()
+
+    total_loss, total_dice, total_iou, n_batches = 0.0, 0.0, 0.0, 0
+
+    with torch.set_grad_enabled(is_train):
+        for images, masks in tqdm(loader, leave=False):
+
+--- code ---
+best_val_dice = 0.0
+for epoch in range(1, EPOCHS + 1):
+    train_loss, train_dice, train_iou = run_epoch(model, train_loader, optimizer)
+    val_loss, val_dice, val_iou = run_epoch(model, val_loader)
+
+    print(
+        f"Epoch {epoch:02d} | "
+        f"train_loss={train_loss:.4f} dice={train_dice:.
+--- markdown ---
+## Step 6: Final test-set evaluation
+
+This Dice/IoU number is your Week 1-2 deliverable to report to the team.
+--- code ---
+model.load_state_dict(torch.load(CHECKPOINT_OUT))
+test_loss, test_dice, test_iou = run_epoch(model, test_loader)
+print(f"\nFINAL TEST RESULTS: dice={test_dice:.4f}  iou={test_iou:.4f}")
+--- code ---

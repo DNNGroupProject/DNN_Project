@@ -1,0 +1,14 @@
+{
+  "model": "SegFormer-B0 + Attention Consistency Loss",
+  "dice": 0.8191,
+  "iou": 0.6936,
+  "f1": 0.8191,
+  "precision": 0.7606,
+  "recall": 0.8873,
+  "pixel_acc": 0.7885,
+  "aamo": 0.432,
+  "params": 3714658,
+  "gflops": 1.692,
+  "fps": 14.55,
+  "ms_per_image": 68.72
+}

@@ -1,0 +1,14 @@
+{
+  "variant": "vanilla",
+  "n_train": 400,
+  "n_val": 60,
+  "epochs": 8,
+  "batch_size": 4,
+  "lr": 6e-05,
+  "lambda2": null,
+  "att_mode": null,
+  "best_val_dice": 0.7467223763465881,
+  "final_val_dice": 0.724565327167511,
+  "final_val_iou": 0.6518194556236268,
+  "wall_clock_s": 669.5
+}
