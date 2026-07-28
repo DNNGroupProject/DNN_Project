@@ -1,0 +1,23 @@
+[
+  {
+    "mask_file": "877160_mask_71.jpg",
+    "image_file": "877160_sat_71.jpg",
+    "vanilla_attn_npy": "877160_mask_71_vanilla_attn.npy",
+    "att_attn_npy": "877160_mask_71_att_attn.npy",
+    "mask_forest_frac": 0.381195068359375
+  },
+  {
+    "mask_file": "992507_mask_38.jpg",
+    "image_file": "992507_sat_38.jpg",
+    "vanilla_attn_npy": "992507_mask_38_vanilla_attn.npy",
+    "att_attn_npy": "992507_mask_38_att_attn.npy",
+    "mask_forest_frac": 0.3798065185546875
+  },
+  {
+    "mask_file": "406425_mask_65.jpg",
+    "image_file": "406425_sat_65.jpg",
+    "vanilla_attn_npy": "406425_mask_65_vanilla_attn.npy",
+    "att_attn_npy": "406425_mask_65_att_attn.npy",
+    "mask_forest_frac": 0.739898681640625
+  }
+]
