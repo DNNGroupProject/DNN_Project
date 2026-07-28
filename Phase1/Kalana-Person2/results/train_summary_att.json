@@ -1,0 +1,11 @@
+{
+  "variant": "att",
+  "epochs": 1,
+  "best_val_dice": 0.5484153032302856,
+  "final_val_dice": 0.5484153032302856,
+  "final_val_iou": 0.39173412695527077,
+  "wall_clock_s": 21.1,
+  "smoke": true,
+  "lambda2": 0.3,
+  "att_mode": "mse"
+}
