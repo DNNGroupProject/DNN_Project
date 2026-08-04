@@ -1,0 +1,14 @@
+{
+  "model": "SegFormer-B0 (from scratch)",
+  "dice": 0.8451,
+  "iou": 0.7368,
+  "f1": 0.8451,
+  "precision": null,
+  "precision_note": "Re-run Step 6 of segformer_baseline_scratch_colab.ipynb on Colab with your Drive checkpoint (EVAL_ONLY=True) to fill Precision from micro-averaged TP/FP.",
+  "f1_note": "For binary forest masks, micro F1 equals micro Dice. Prior Colab test used batch-mean Dice=0.8451; treat F1 as 0.8451 until Step 6 micro-eval is re-run.",
+  "params": 3714658,
+  "params_M": 3.71,
+  "gflops": 1.692,
+  "source_dice_iou": "prior Colab run outputs in segformer_baseline_scratch_colab.ipynb (FINAL TEST RESULTS)",
+  "source_efficiency": "local thop profile @ 1x3x256x256 on random-init SegFormer-B0 (architecture identical to trained scratch)"
+}

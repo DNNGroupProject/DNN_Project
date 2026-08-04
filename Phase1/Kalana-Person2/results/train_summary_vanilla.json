@@ -1,0 +1,11 @@
+{
+  "variant": "vanilla",
+  "epochs": 2,
+  "best_val_dice": 0.7099080085754395,
+  "final_val_dice": 0.7099080085754395,
+  "final_val_iou": 0.5776981711387634,
+  "wall_clock_s": 10.3,
+  "smoke": true,
+  "lambda2": null,
+  "att_mode": null
+}
