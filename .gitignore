@@ -14,3 +14,12 @@ docs/
 
 images/*
 masks/*
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz

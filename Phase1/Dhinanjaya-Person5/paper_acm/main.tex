@@ -1,0 +1,289 @@
+%%
+%% CS3631 Phase 2 short paper — ACM Conference Proceedings Primary Article
+%% Template (acmart, sigconf format), per course spec (CS3631 - Project -
+%% 2026.docx, Sec 12): 4-page limit excluding references.
+%%
+%% NOTE: placeholder ACM rights/venue fields below are left blank/suppressed
+%% since this is a course-internal Moodle submission, not an actual ACM
+%% conference registration. Fill in real venue details only if/when this is
+%% adapted for an actual ACM venue submission.
+%%
+\documentclass[sigconf,review]{acmart}
+
+%% Suppress the ACM reference/rights boilerplate — no real DOI/ISBN exists
+%% for a course submission.
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\setcopyright{none}
+\acmConference[CS3631 2026]{CS3631 Deep Neural Networks — Course Project}{2026}{}
+\acmYear{2026}
+\acmDOI{}
+\acmISBN{}
+\acmBooktitle{}
+
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
+\begin{document}
+
+\title{Explainability-Guided SegFormer for Forest Cover Segmentation Using Attention Consistency Supervision}
+
+\author{Chanupa Gurusinghe}
+\affiliation{\institution{CS3631 Group Project}\country{}}
+
+\author{Kalana Lakshan}
+\affiliation{\institution{CS3631 Group Project}\country{}}
+
+\author{Dinura N. Ginige}
+\affiliation{\institution{CS3631 Group Project}\country{}}
+
+\author{Lasana Pahanga}
+\affiliation{\institution{CS3631 Group Project}\country{}}
+
+\author{Dhinanjaya Fernando}
+\affiliation{\institution{CS3631 Group Project}\country{}}
+
+\renewcommand{\shortauthors}{Gurusinghe, Lakshan, Ginige, Pahanga, and Fernando}
+
+\begin{abstract}
+Vision Transformer (ViT)-based segmentation models achieve strong accuracy,
+but their internal attention is typically used only for post-hoc
+visualization, not as a supervised training signal. Prior work applying
+attention supervision for interpretability has focused on medical imaging
+and autonomous-driving domains, while forest/non-forest segmentation from
+aerial imagery still treats attention purely as an architectural
+feature-refinement mechanism, with interpretability evaluated qualitatively
+if at all. We present an explainability-guided SegFormer-B0 architecture
+that treats attention as a first-class training target: an
+\emph{Attention Consistency Loss} aligns the model's internal attention
+with the ground-truth forest mask during training, encouraging the network
+to focus on canopy regions rather than roads, shadows, or built structures.
+Because SegFormer's encoder uses spatial-reduction attention rather than
+standard multi-head self-attention, we adapt Gradient-weighted Attention
+Rollout to SegFormer, restricting it to the final encoder stage where
+attention is square and token-consistent. We introduce a quantitative
+metric, Average Attention--Mask Overlap (AAMO), to evaluate interpretability
+numerically rather than only visually. In preliminary small-scale
+experiments, the proposed method raises AAMO from 0.0144 to 0.432 relative
+to a vanilla SegFormer-B0 baseline while also slightly improving Dice
+(0.8017$\to$0.8191) and IoU (0.6690$\to$0.6936), alongside a U-Net baseline
+(Dice 0.8492). Full-scale validation and a complete ablation study are
+ongoing.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+
+Semantic segmentation of forest cover from aerial imagery underpins
+ecological monitoring, deforestation tracking, and land-use management.
+Transformer-based models such as SegFormer~\cite{xie2021segformer} have been
+applied to this task for their ability to capture long-range spatial
+dependencies, but the great majority of transformer segmentation work,
+including recent forest-specific studies~\cite{foresanext2026,ppliteseg2026,attunet2022deforestation},
+uses attention purely as an architectural mechanism to improve accuracy,
+evaluating explainability only through post-hoc qualitative heatmap
+inspection, if at all.
+
+Transformer attention in segmentation models is not explicitly guided
+during training and frequently attends to task-irrelevant regions --- roads,
+shadows, buildings --- rather than the class of interest, reducing both
+accuracy at ambiguous boundaries and the trustworthiness of the model's
+explanations. No existing work addresses this specifically for
+forest/non-forest segmentation, nor evaluates attention faithfulness
+quantitatively in this domain.
+
+This paper makes four contributions: (1) an Attention Consistency Loss that
+supervises SegFormer-B0's internal attention against the ground-truth
+forest mask during training; (2) an adaptation of Gradient-weighted
+Attention Rollout to SegFormer's spatial-reduction attention; (3) AAMO, a
+quantitative interpretability metric evaluable alongside standard
+segmentation metrics; and (4) a preliminary empirical comparison against
+U-Net and vanilla SegFormer-B0 baselines showing that explainability-guided
+training does not cost --- and may slightly improve --- segmentation
+accuracy while substantially improving attention faithfulness.
+
+\section{Related Work}
+
+Existing work relevant to this proposal falls into two families.
+
+\textbf{Attention-as-architecture.} ForResANeXt~\cite{foresanext2026} embeds
+lightweight attention in residual blocks for forest/non-forest satellite
+segmentation; Attention-Refined PP-LiteSeg~\cite{ppliteseg2026} fuses
+multi-branch attention for cross-regional UAV forest segmentation; an
+attention-based U-Net~\cite{attunet2022deforestation} adds attention gates
+for deforestation mapping on Sentinel-2 imagery. All three use attention
+purely as a feature-refinement mechanism improving accuracy --- attention is
+never supervised or evaluated as an explanation.
+
+\textbf{Attention-as-explainability.} eX-ViT~\cite{zhang2023exvit}
+regularizes ViT attention with an attribute-guided loss for weakly
+supervised natural-image classification; TransAttUnet~\cite{chen2022transattunet}
+integrates guided attention into a U-Net/Transformer hybrid for medical
+segmentation; work on driving models~\cite{guiding2024driving} applies an
+explicit attention loss to align attention with task-relevant scene regions.
+All three supervise attention as a training signal, but outside the
+forest/remote-sensing domain and without a quantitative attention-mask
+overlap metric. The attention-extraction method underlying our approach is
+Chefer et al.'s Gradient-weighted Attention
+Rollout~\cite{chefer2021transformer}, originally defined for standard
+multi-head self-attention.
+
+\textbf{Gap.} No prior work combines (a) attention supervision as a
+training signal, (b) the forest/non-forest remote-sensing domain, and (c) a
+quantitative interpretability metric evaluated alongside standard
+segmentation metrics. This paper addresses that combined gap. We also draw
+on the WildUAV forest inspection dataset work~\cite{blaga2024wilduav} as
+evidence that forest-aerial-segmentation research so far has focused on
+data/architecture rather than explainability.
+
+\section{Proposed Method}
+
+\subsection{Architecture Overview}
+The pipeline (Figure~\ref{fig:pipeline}) extends SegFormer-B0 with an
+explainability-supervision path applied during training only; at inference
+the model runs as standard SegFormer-B0 with negligible overhead. The
+encoder's stage-4 attention (the only stage with spatial-reduction ratio
+$=1$, giving square, token-consistent $64\times64$ self-attention) feeds an
+adapted Gradient-weighted Attention Rollout to produce attention map $A$.
+The ground-truth mask $Y$ is Gaussian-smoothed into a soft target $A^{*}$.
+$A$ and $A^{*}$ are compared by the Attention Consistency Loss and combined
+with the standard segmentation loss.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=6mm and 8mm,
+  box/.style={draw, rounded corners, align=center, minimum height=7mm, font=\footnotesize, inner sep=2pt},
+  arr/.style={-{Latex[length=1.5mm]}}
+]
+\node[box] (x) {Input $X$};
+\node[box, right=of x] (enc) {SegFormer\\Encoder};
+\node[box, right=of enc] (dec) {Decoder};
+\node[box, right=of dec] (p) {Pred.\ $P$};
+
+\node[box, below=of enc] (roll) {Stage-4 Grad-\\Rollout};
+\node[box, right=of roll] (a) {Attn.\ $A$};
+
+\node[box, below=of x] (y) {Mask $Y$};
+\node[box, below=of roll] (gauss) {Gaussian};
+\node[box, right=of gauss] (astar) {$A^{*}$};
+
+\node[box, below right=6mm and 2mm of a, font=\scriptsize] (latt) {$L_{att}$};
+\node[box, right=of p, font=\scriptsize] (lseg) {$L_{dice}+\lambda_1 L_{bce}$};
+
+\draw[arr] (x) -- (enc);
+\draw[arr] (enc) -- (dec);
+\draw[arr] (dec) -- (p);
+\draw[arr] (enc) -- (roll);
+\draw[arr] (roll) -- (a);
+\draw[arr] (y) -- (gauss);
+\draw[arr] (gauss) -- (astar);
+\draw[arr] (a) -- (latt);
+\draw[arr] (astar) -- (latt);
+\draw[arr] (p) -- (lseg);
+\draw[arr] (y) |- (lseg);
+\end{tikzpicture}
+\caption{Training pipeline: predicted mask $P$ and attention map $A$ are
+each supervised, then combined into the total training objective $L$.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Handling Spatial-Reduction Attention}
+Standard Attention Rollout assumes full multi-head self-attention across all
+tokens. SegFormer's Efficient Self-Attention reduces keys/values by a
+spatial-reduction ratio at earlier stages (sr $=8,4,2$ for stages 1--3),
+making those stages' attention matrices rectangular rather than square.
+Only stage 4 (sr $=1$) has true square, token-consistent $64\times64$
+attention --- the only stage where Rollout's recursive matrix product is
+valid without further approximation, verified empirically on MiT-B0 at
+$256{\times}256$ input resolution.
+
+\subsection{Mathematical Formulation}
+Let $X \in \mathbb{R}^{256\times256\times3}$ and ground-truth mask
+$Y \in \{0,1\}^{256\times256}$:
+\begin{align}
+F &= E(X),\quad P = D(F) \in [0,1]^{256\times256} \\
+A &= \mathrm{Rollout}(F) \in [0,1]^{256\times256} \\
+A^{*} &= \mathrm{Gaussian}(Y) \\
+L_{dice} &= 1 - \frac{2|P\cap Y|}{|P|+|Y|}, \quad
+L_{bce} = -\sum \big[Y\log P + (1{-}Y)\log(1{-}P)\big] \\
+L_{att} &= \mathrm{MSE}(A, A^{*}) \;\text{or}\; \mathrm{KL}(A \,\|\, A^{*}) \\
+L &= L_{dice} + \lambda_1 L_{bce} + \lambda_2 L_{att}
+\end{align}
+with $\lambda_1{=}1$, $\lambda_2{=}0.3$ initially, tuned on the validation
+set. Because $A$ is itself defined via a gradient (Grad-Rollout is
+Grad-CAM-style), backpropagating $L_{att}$ requires double backpropagation;
+our implementation keeps $A$ attached to the autograd graph via
+\texttt{create\_graph=True} so one combined \texttt{backward()} reaches all
+parameters.
+
+\section{Experimental Setup}
+\textbf{Dataset.} 5{,}000 RGB aerial images ($256{\times}256$) with binary
+forest/non-forest masks; 70/15/15 stratified train/val/test split.
+Preliminary results below use a 400/60/60 CPU-scale subset, not the full
+5{,}000 images.
+
+\textbf{Baselines.} U-Net (CNN) and vanilla SegFormer-B0 (no attention
+loss), isolating the effect of the proposed attention supervision.
+
+\textbf{Metrics.} Dice, IoU, F1 (segmentation quality); parameter count,
+GFLOPs, FPS (efficiency); AAMO --- normalized overlap between thresholded
+attention and the ground-truth forest mask (interpretability).
+
+\section{Preliminary Results}
+
+Table~\ref{tab:results} reports an 8-epoch, 400-image CPU smoke run. AAMO
+increases approximately $30\times$ (0.0144 $\to$ 0.432) with the
+attention-consistency variant, while Dice and IoU also improve slightly
+over vanilla SegFormer-B0, suggesting the attention supervision does not
+cost segmentation accuracy at this scale.
+
+\begin{table}[t]
+\caption{Preliminary comparison (CPU smoke run, 400/60/60 images, 8 epochs).}
+\label{tab:results}
+\begin{tabular}{@{}lccc c@{}}
+\toprule
+Model & Dice & IoU & F1 & AAMO \\
+\midrule
+U-Net (CNN) & 0.8492 & 0.7379 & 0.8492 & n/a \\
+SegFormer-B0 & 0.8017 & 0.6690 & 0.8017 & 0.0144 \\
+SegFormer-B0 + $L_{att}$ & 0.8191 & 0.6936 & 0.8191 & \textbf{0.432} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Limitations of these preliminary numbers.} Eight epochs on 400
+images is a smoke-scale proof that the pipeline is correct end-to-end, not
+a reliable trend; the full 5{,}000-image, 20-epoch run is pending.
+Qualitative attention-drift figures do not yet show as clean a story as the
+AAMO number: the vanilla model's attention exhibits a corner artifact
+rather than the motivating roads/shadows failure mode, plausibly from
+undertraining, and warrants revisiting once the full-scale model has
+properly converged.
+
+\section{Discussion}
+The large AAMO gain relative to a small Dice/IoU change suggests attention
+faithfulness and segmentation accuracy are, at least partially, separable
+objectives at this scale --- supervising attention does not appear to trade
+off against accuracy, though this must be confirmed with the full-scale run
+and a multi-seed ablation study before drawing firm conclusions. Both the
+MSE and KL-divergence formulations of $L_{att}$ are implemented; only MSE
+has been evaluated so far.
+
+\section{Conclusion and Future Work}
+We presented an explainability-guided SegFormer-B0 that supervises internal
+attention against the ground-truth forest mask via an Attention Consistency
+Loss, an adaptation of Gradient-weighted Attention Rollout to SegFormer's
+spatial-reduction attention, and a new quantitative interpretability
+metric, AAMO. Preliminary small-scale results support the core hypothesis.
+Future work will run the complete multi-seed ablation study at full scale,
+compare the MSE and KL-divergence loss formulations, tune $\lambda_2$ via a
+validation sweep, and, time permitting, add a boundary-refinement module
+targeting canopy-edge errors.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

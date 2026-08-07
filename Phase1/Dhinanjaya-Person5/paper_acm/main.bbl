@@ -1,0 +1,132 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{9}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{} and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showURL}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showURL #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[attunet2022deforestation(2022)]%
+        {attunet2022deforestation}
+ \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{An Attention-Based {U-Net} for Detecting
+  Deforestation Within Satellite Sensor Imagery}.
+\newblock \bibinfo{journal}{\emph{ScienceDirect}} (\bibinfo{year}{2022}).
+\newblock
+
+
+\bibitem[Blaga and Nedevschi(2024)]%
+        {blaga2024wilduav}
+\bibfield{author}{\bibinfo{person}{Bianca-Cerasela-Zelia Blaga} {and}
+  \bibinfo{person}{Sergiu Nedevschi}.} \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{Forest Inspection Dataset for Aerial Semantic
+  Segmentation and Depth Estimation}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2403.06621}}
+  (\bibinfo{year}{2024}).
+\newblock
+
+
+\bibitem[Chefer et~al\mbox{.}(2021)]%
+        {chefer2021transformer}
+\bibfield{author}{\bibinfo{person}{Hila Chefer}, \bibinfo{person}{Shir Gur},
+  {and} \bibinfo{person}{Lior Wolf}.} \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{Transformer Interpretability Beyond Attention
+  Visualization}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2101.03919}}
+  (\bibinfo{year}{2021}).
+\newblock
+
+
+\bibitem[Chen et~al\mbox{.}(2022)]%
+        {chen2022transattunet}
+\bibfield{author}{\bibinfo{person}{Bingzhi Chen} {et~al\mbox{.}}}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{{TransAttUnet}: Multi-Level Attention-Guided U-Net
+  with Transformer for Medical Image Segmentation}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2107.05274}}
+  (\bibinfo{year}{2022}).
+\newblock
+
+
+\bibitem[foresanext2026(2026)]%
+        {foresanext2026}
+ \bibinfo{year}{2026}\natexlab{}.
+\newblock \showarticletitle{{ForResANeXt}: Forest/Non-Forest Segmentation with
+  Aggregated Residual Attention Network in Satellite Imagery}.
+\newblock \bibinfo{journal}{\emph{ScienceDirect}} (\bibinfo{year}{2026}).
+\newblock
+
+
+\bibitem[guiding2024driving(2024)]%
+        {guiding2024driving}
+ \bibinfo{year}{2024}\natexlab{}.
+\newblock \showarticletitle{Guiding Attention in End-to-End Driving Models}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2405.00242}}
+  (\bibinfo{year}{2024}).
+\newblock
+
+
+\bibitem[ppliteseg2026(2026)]%
+        {ppliteseg2026}
+ \bibinfo{year}{2026}\natexlab{}.
+\newblock \showarticletitle{Enhancing Cross-Regional Generalization in {UAV}
+  Forest Segmentation Across Plantation and Natural Forests with
+  Attention-Refined {PP-LiteSeg} Networks}.
+\newblock \bibinfo{journal}{\emph{Remote Sensing}} (\bibinfo{year}{2026}).
+\newblock
+
+
+\bibitem[Xie et~al\mbox{.}(2021)]%
+        {xie2021segformer}
+\bibfield{author}{\bibinfo{person}{Enze Xie}, \bibinfo{person}{Wenhai Wang},
+  \bibinfo{person}{Zhiding Yu}, \bibinfo{person}{Anima Anandkumar},
+  \bibinfo{person}{Jose~M. Alvarez}, {and} \bibinfo{person}{Ping Luo}.}
+  \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{{SegFormer}: Simple and Efficient Design for
+  Semantic Segmentation with Transformers}. In
+  \bibinfo{booktitle}{\emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}}.
+\newblock
+
+
+\bibitem[Zhang et~al\mbox{.}(2023)]%
+        {zhang2023exvit}
+\bibfield{author}{\bibinfo{person}{Yuan Zhang} {et~al\mbox{.}}}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{{eX-ViT}: A Novel eXplainable Vision Transformer
+  for Weakly Supervised Semantic Segmentation}.
+\newblock \bibinfo{journal}{\emph{Pattern Recognition}} (\bibinfo{year}{2023}).
+\newblock
+
+
+\end{thebibliography}
