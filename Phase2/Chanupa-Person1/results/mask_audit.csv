@@ -1,0 +1,19 @@
+check,value,note
+Image files,5108,Under the audited images/ folder
+Mask files,5108,Under the audited masks/ folder
+Masks sampled,5108,Pairs actually read for this report
+Orphan images,0,Images with no matching mask
+Orphan masks,0,Masks with no matching image
+Unreadable files,0,Failed to decode
+Distinct mask sizes,256x256,Resize is a no-op when this equals the configured IMG_SIZE
+Mask pixels sampled,"334,757,888",Basis for the percentages below
+Distinct mask values,20 of 256,How many grey levels actually occur
+Furthest drift toward mid-gray,9 levels,Largest distance any pixel sits from pure 0 or pure 255
+Pixels exactly 0,38.1557%,Pure non-forest
+Pixels exactly 255,60.4943%,Pure forest
+Pixels 1-126,0.6693%,"Off-black, thresholds to 0"
+Pixels 127-254,0.6806%,"Off-white, thresholds to 1"
+Pixels 32-223 (mid-gray),0.0000%,Genuinely ambiguous pixels -- the ones thresholding is supposed to rescue
+"mask/255 vs mask>127, mean abs diff",0.000098,What skipping the threshold actually costs per pixel
+...pixels differing by >0.1,0.0000%,Pixels where the two targets meaningfully disagree
+Forest pixel ratio,0.6117 +/- 0.3306,"Mean +/- std per mask, after thresholding"
