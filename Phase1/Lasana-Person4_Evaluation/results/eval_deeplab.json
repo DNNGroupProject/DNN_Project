@@ -1,0 +1,14 @@
+{
+  "model": "DeepLabV3+ (MobileNetV3) \u2014 extra baseline",
+  "dice": 0.7369,
+  "iou": 0.5834,
+  "f1": 0.7369,
+  "precision": 0.592,
+  "recall": 0.9758,
+  "pixel_acc": 0.6127,
+  "aamo": "n/a",
+  "params": 11020594,
+  "gflops": "n/a",
+  "fps": 8.51,
+  "ms_per_image": 117.52
+}
