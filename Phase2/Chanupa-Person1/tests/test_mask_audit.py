@@ -34,6 +34,7 @@ from mask_audit import (
 
 
 def _hist(values: dict[int, int]) -> np.ndarray:
+    """Build a fake 256-bin histogram from {pixel value: how many}."""
     h = np.zeros(256, dtype=np.int64)
     for value, count in values.items():
         h[value] = count
@@ -41,6 +42,8 @@ def _hist(values: dict[int, int]) -> np.ndarray:
 
 
 # ---- naming / pairing -------------------------------------------------
+# The audit is only correct if it finds the right mask for each image, so
+# these cover the _sat_ -> _mask_ rename and the extension fallback.
 
 def test_mask_name_follows_sat_to_mask_convention():
     assert mask_name_for("10452_sat_08.jpg") == "10452_mask_08.jpg"
@@ -69,6 +72,8 @@ def test_find_mask_path_returns_none_when_absent():
 
 
 # ---- histogram summary ------------------------------------------------
+# Feed in histograms whose answers are obvious by hand, so the percentages
+# reported for the real dataset can be trusted.
 
 def test_summarise_histogram_splits_pure_black_and_white():
     s = summarise_histogram(_hist({0: 300, 255: 700}))
@@ -116,6 +121,9 @@ def test_summarise_histogram_rejects_empty():
 
 
 # ---- binarisation delta ----------------------------------------------
+# The three cases below go from "already binary" to "genuinely gray". The
+# last one is the important one: it proves a near-zero reading on the real
+# masks means the data is clean, not that the metric is broken.
 
 def test_delta_is_zero_for_a_perfectly_binary_mask():
     mask = np.array([[0, 255], [255, 0]], dtype=np.uint8)
@@ -150,6 +158,7 @@ def test_threshold_boundary_is_exclusive():
 
 
 # ---- report shape -----------------------------------------------------
+# Catches a renamed dict key breaking the .csv/.md writers at run time.
 
 def test_build_rows_is_three_columns_and_non_empty():
     result = {

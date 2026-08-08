@@ -111,15 +111,27 @@ def binarisation_delta(mask: np.ndarray) -> tuple[float, float]:
 
 
 def audit(img_dir: Path, mask_dir: Path, sample_every: int, expect_size: int | None) -> dict:
+    """Read the dataset once and return every number the report needs.
+
+    Flow: list the files -> check pairing -> read each sampled mask and
+    accumulate stats -> check the sizes -> pack it all into one dict.
+    """
+    # --- 1. What's on disk -------------------------------------------------
     image_files = sorted(f for f in os.listdir(img_dir) if f.lower().endswith(IMAGE_EXTS))
     mask_files = sorted(f for f in os.listdir(mask_dir) if f.lower().endswith(IMAGE_EXTS))
     if not image_files:
         raise FileNotFoundError(f"No images found under {img_dir}")
 
+    # --- 2. Pairing: an unmatched file in either direction is a real problem,
+    #        because a silently skipped pair shrinks the training set.
     orphan_images = [f for f in image_files if find_mask_path(mask_dir, f) is None]
     paired_masks = {find_mask_path(mask_dir, f).name for f in image_files if f not in orphan_images}
     orphan_masks = [f for f in mask_files if f not in paired_masks]
 
+    # --- 3. Walk the pairs and accumulate ----------------------------------
+    # One pass over the data. The histogram is summed across every mask so the
+    # percentages describe the whole dataset, while the per-mask numbers
+    # (delta, forest ratio) are collected in lists and averaged at the end.
     sampled = image_files[::sample_every]
     hist = np.zeros(256, dtype=np.int64)
     img_sizes: set[tuple[int, int]] = set()
@@ -134,12 +146,15 @@ def audit(img_dir: Path, mask_dir: Path, sample_every: int, expect_size: int | N
         if mask_path is None:
             continue
         try:
+            # Sizes come from the headers -- only the mask is decoded to pixels,
+            # which keeps a full 5,108-pair run to about a minute.
             with Image.open(img_dir / filename) as im:
                 img_sizes.add(im.size)
             with Image.open(mask_path) as mk:
                 mask_sizes.add(mk.size)
                 mask = np.array(mk.convert("L"))
         except OSError as exc:
+            # Note it and keep going -- one corrupt file shouldn't kill the run.
             unreadable.append(f"{filename}: {exc}")
             continue
 
@@ -152,12 +167,16 @@ def audit(img_dir: Path, mask_dir: Path, sample_every: int, expect_size: int | N
     if not deltas:
         raise FileNotFoundError(f"No readable image/mask pairs under {img_dir} / {mask_dir}")
 
+    # --- 4. Geometry: if every file already matches the training IMG_SIZE,
+    #        the resize in the loaders does nothing and can't distort labels.
     unexpected_sizes = (
         sorted(s for s in img_sizes | mask_sizes if s != (expect_size, expect_size))
         if expect_size
         else []
     )
 
+    # --- 5. Pack up. "ok" drives the exit code, so only genuine integrity
+    #        failures belong in it -- not the measurements themselves.
     result = {
         "images_found": len(image_files),
         "masks_found": len(mask_files),
@@ -228,6 +247,10 @@ def build_rows(r: dict) -> list[tuple[str, str, str]]:
 
 
 def write_reports(r: dict, out_dir: Path) -> tuple[Path, Path]:
+    """Write the same table twice: .csv to compute with, .md to read in a PR.
+
+    Both come from build_rows(), so the two files can never drift apart.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = build_rows(r)
 
@@ -252,6 +275,12 @@ def write_reports(r: dict, out_dir: Path) -> tuple[Path, Path]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Read args -> check the folders exist -> audit -> write -> print.
+
+    Exit codes: 0 all checks passed, 1 an integrity check failed,
+    2 a folder was missing. That's what makes it usable as a pre-flight
+    gate -- `python mask_audit.py && python train.py` stops on bad data.
+    """
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--images", type=Path, default=DEFAULT_IMG_DIR)
     parser.add_argument("--masks", type=Path, default=DEFAULT_MASK_DIR)
@@ -264,6 +293,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-dir", type=Path, default=Path(__file__).resolve().parent / "results")
     args = parser.parse_args(argv)
 
+    # Fail early and clearly on a bad path -- otherwise the error surfaces
+    # much later as a confusing "no pairs found".
     for d in (args.images, args.masks):
         if not d.is_dir():
             print(f"ERROR: not a directory: {d}", file=sys.stderr)
@@ -272,10 +303,13 @@ def main(argv: list[str] | None = None) -> int:
     r = audit(args.images, args.masks, max(1, args.sample_every), args.expect_size or None)
     csv_path, md_path = write_reports(r, args.out_dir)
 
+    # Print the same rows to the terminal, padded into two aligned columns.
     width = max(len(c) for c, _, _ in build_rows(r))
     for check, value, _ in build_rows(r):
         print(f"{check:<{width}}  {value}")
 
+    # Only list problems that actually occurred, and cap it at 5 names so a
+    # broken dataset doesn't scroll thousands of lines past you.
     for label, items in (
         ("orphan images", r["orphan_images"]),
         ("orphan masks", r["orphan_masks"]),
