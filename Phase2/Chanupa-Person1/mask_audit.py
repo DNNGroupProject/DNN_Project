@@ -86,8 +86,11 @@ def summarise_histogram(hist: np.ndarray) -> dict:
         "pixels_total": total,
         "pct_exactly_0": pct(hist[0]),
         "pct_exactly_255": pct(hist[255]),
-        "pct_1_to_126": pct(hist[1:MASK_THRESHOLD].sum()),
-        "pct_127_to_254": pct(hist[MASK_THRESHOLD:255].sum()),
+        # Split on the threshold itself, so each bucket maps to exactly one
+        # label: `mask > 127` sends 127 to background, so it belongs in the
+        # lower bucket even though it looks mid-range.
+        "pct_1_to_threshold": pct(hist[1 : MASK_THRESHOLD + 1].sum()),
+        "pct_threshold_to_254": pct(hist[MASK_THRESHOLD + 1 : 255].sum()),
         "pct_midgray": pct(hist[MIDGRAY_LO : MIDGRAY_HI + 1].sum()),
         "distinct_values": len(present),
         # How far toward mid-gray any pixel strays: 0 means every pixel is
@@ -155,7 +158,8 @@ def audit(img_dir: Path, mask_dir: Path, sample_every: int, expect_size: int | N
                 mask = np.array(mk.convert("L"))
         except OSError as exc:
             # Note it and keep going -- one corrupt file shouldn't kill the run.
-            unreadable.append(f"{filename}: {exc}")
+            # Either file in the pair could be the bad one, so name both.
+            unreadable.append(f"{filename} + {mask_path.name}: {exc}")
             continue
 
         hist += np.bincount(mask.ravel(), minlength=256)
@@ -221,8 +225,18 @@ def build_rows(r: dict) -> list[tuple[str, str, str]]:
         ),
         ("Pixels exactly 0", f"{r['pct_exactly_0']:.4f}%", "Pure non-forest"),
         ("Pixels exactly 255", f"{r['pct_exactly_255']:.4f}%", "Pure forest"),
-        ("Pixels 1-126", f"{r['pct_1_to_126']:.4f}%", "Off-black, thresholds to 0"),
-        ("Pixels 127-254", f"{r['pct_127_to_254']:.4f}%", "Off-white, thresholds to 1"),
+        # Ranges are built from MASK_THRESHOLD rather than hardcoded, so the
+        # labels stay honest if the threshold is ever changed.
+        (
+            f"Pixels 1-{MASK_THRESHOLD}",
+            f"{r['pct_1_to_threshold']:.4f}%",
+            "Off-black, thresholds to 0",
+        ),
+        (
+            f"Pixels {MASK_THRESHOLD + 1}-254",
+            f"{r['pct_threshold_to_254']:.4f}%",
+            "Off-white, thresholds to 1",
+        ),
         (
             f"Pixels {MIDGRAY_LO}-{MIDGRAY_HI} (mid-gray)",
             f"{r['pct_midgray']:.4f}%",

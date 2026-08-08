@@ -105,11 +105,37 @@ def test_summarise_histogram_counts_midgray_band():
 
 def test_summarise_histogram_excludes_near_extremes_from_midgray():
     # Values just off 0/255 are JPEG rounding, not ambiguity -- they belong in
-    # the 1-126 / 127-254 buckets but must stay out of the mid-gray band.
+    # the off-black / off-white buckets but must stay out of the mid-gray band.
     s = summarise_histogram(_hist({3: 500, 252: 500}))
     assert s["pct_midgray"] == 0.0
-    assert abs(s["pct_1_to_126"] - 50.0) < 1e-9
-    assert abs(s["pct_127_to_254"] - 50.0) < 1e-9
+    assert abs(s["pct_1_to_threshold"] - 50.0) < 1e-9
+    assert abs(s["pct_threshold_to_254"] - 50.0) < 1e-9
+
+
+def test_threshold_value_counts_as_background_not_foreground():
+    # 127 itself is the trap: it looks mid-range but `mask > 127` sends it to
+    # background, so it must land in the lower bucket. 128 is the first
+    # foreground value.
+    s = summarise_histogram(_hist({MASK_THRESHOLD: 100}))
+    assert s["pct_1_to_threshold"] == 100.0
+    assert s["pct_threshold_to_254"] == 0.0
+
+    s = summarise_histogram(_hist({MASK_THRESHOLD + 1: 100}))
+    assert s["pct_1_to_threshold"] == 0.0
+    assert s["pct_threshold_to_254"] == 100.0
+
+
+def test_buckets_account_for_every_pixel():
+    # The four buckets must partition 0..255 exactly -- no pixel counted twice,
+    # none dropped. This is what broke when the split was off by one.
+    s = summarise_histogram(_hist({0: 10, 5: 10, MASK_THRESHOLD: 10, 200: 10, 250: 10, 255: 10}))
+    covered = (
+        s["pct_exactly_0"]
+        + s["pct_exactly_255"]
+        + s["pct_1_to_threshold"]
+        + s["pct_threshold_to_254"]
+    )
+    assert abs(covered - 100.0) < 1e-9
 
 
 def test_summarise_histogram_rejects_empty():
@@ -166,7 +192,7 @@ def test_build_rows_is_three_columns_and_non_empty():
         "orphan_images": [], "orphan_masks": [], "unreadable": [],
         "mask_sizes": [(256, 256)], "pixels_total": 100,
         "pct_exactly_0": 40.0, "pct_exactly_255": 60.0,
-        "pct_1_to_126": 0.0, "pct_127_to_254": 0.0, "pct_midgray": 0.0,
+        "pct_1_to_threshold": 0.0, "pct_threshold_to_254": 0.0, "pct_midgray": 0.0,
         "distinct_values": 2, "max_drift_toward_middle": 0,
         "soft_vs_hard_mean_delta": 0.0, "soft_vs_hard_pct_over_tol": 0.0,
         "forest_ratio_mean": 0.6, "forest_ratio_std": 0.1,
@@ -186,6 +212,8 @@ ALL_TESTS = [
     test_drift_peaks_at_the_threshold_itself,
     test_summarise_histogram_counts_midgray_band,
     test_summarise_histogram_excludes_near_extremes_from_midgray,
+    test_threshold_value_counts_as_background_not_foreground,
+    test_buckets_account_for_every_pixel,
     test_summarise_histogram_rejects_empty,
     test_delta_is_zero_for_a_perfectly_binary_mask,
     test_delta_is_small_for_jpeg_style_near_extremes,
