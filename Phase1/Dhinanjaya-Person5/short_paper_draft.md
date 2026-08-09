@@ -4,7 +4,15 @@
 > `Phase1/Lasana-Person4_Evaluation/results/`. **Superseded as the
 > submission target by `paper_acm/main.tex`** — the course requires the ACM
 > template, not IEEE, and that version is already built and verified to
-> compile (3 pages incl. references, within the 4-page limit). This
+> compile: content (Introduction-Conclusion) fills a full 3 pages, with
+Figure 2 (qualitative attention comparison) and the complete references
+list on page 4, safely within the 4-page-excluding-references limit and
+using the page budget rather than stopping short. It now also includes an
+algorithm box for the training step, formal AAMO equations, an
+Implementation Details + Reproducibility paragraph, and a Threats to
+Validity / Broader Impact discussion not yet mirrored into this markdown
+file: treat `paper_acm/main.tex` as canonical for content, this file lags
+behind it. This
 > markdown file is kept as the staging/content source; not yet reviewed by
 > the rest of the team (§6.1.2 review step still pending). Citation numbers
 > are provisional pending final bibliography.

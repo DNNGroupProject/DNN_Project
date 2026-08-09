@@ -24,6 +24,8 @@
 \usepackage{booktabs}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, positioning}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \begin{document}
 
@@ -72,6 +74,32 @@ to a vanilla SegFormer-B0 baseline while also slightly improving Dice
 ongoing.
 \end{abstract}
 
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10010147.10010257.10010293.10010294</concept_id>
+       <concept_desc>Computing methodologies~Neural networks</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10010147.10010257.10010293.10010321</concept_id>
+       <concept_desc>Computing methodologies~Image segmentation</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10010147.10010178.10010224.10010225</concept_id>
+       <concept_desc>Computing methodologies~Interpretability and explainability</concept_desc>
+       <concept_significance>300</concept_significance>
+   </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computing methodologies~Neural networks}
+\ccsdesc[500]{Computing methodologies~Image segmentation}
+\ccsdesc[300]{Computing methodologies~Interpretability and explainability}
+
+\keywords{semantic segmentation, vision transformers, SegFormer, attention supervision, explainable AI, forest cover mapping, remote sensing}
+
 \maketitle
 
 \section{Introduction}
@@ -106,7 +134,16 @@ accuracy while substantially improving attention faithfulness.
 
 \section{Related Work}
 
-Existing work relevant to this proposal falls into two families.
+Forest-cover segmentation from aerial and satellite imagery has been
+approached almost exclusively as an accuracy problem. U-Net~\cite{ronneberger2015unet}
+remains the dominant convolutional baseline, and recent forest-specific
+datasets such as the WildUAV forest-inspection
+benchmark~\cite{blaga2024wilduav} have focused effort on acquiring larger
+and more varied labeled imagery (real and simulated, multiple altitudes and
+illumination conditions) to improve segmentation accuracy on models such as
+HRNet and PointFlow, without examining what the underlying network attends
+to or why. Existing work directly relevant to attention supervision falls
+into two families.
 
 \textbf{Attention-as-architecture.} ForResANeXt~\cite{foresanext2026} embeds
 lightweight attention in residual blocks for forest/non-forest satellite
@@ -133,10 +170,23 @@ multi-head self-attention.
 \textbf{Gap.} No prior work combines (a) attention supervision as a
 training signal, (b) the forest/non-forest remote-sensing domain, and (c) a
 quantitative interpretability metric evaluated alongside standard
-segmentation metrics. This paper addresses that combined gap. We also draw
-on the WildUAV forest inspection dataset work~\cite{blaga2024wilduav} as
-evidence that forest-aerial-segmentation research so far has focused on
-data/architecture rather than explainability.
+segmentation metrics. The attention-as-architecture
+literature~\cite{foresanext2026,ppliteseg2026,attunet2022deforestation}
+operates in the correct domain but never supervises or measures attention
+as an explanation. The attention-as-explainability
+literature~\cite{zhang2023exvit,chen2022transattunet,guiding2024driving}
+supervises attention as a training signal but never in the
+forest-segmentation domain, and none of the three reports a quantitative
+attention-fidelity metric comparable across model configurations. This
+paper addresses that combined gap: an Attention Consistency Loss that
+supervises SegFormer's internal attention against the ground-truth forest
+mask, an adaptation of Gradient-weighted Attention Rollout to SegFormer's
+spatial-reduction attention, and AAMO, a new quantitative metric that lets
+attention fidelity be reported and compared the same way Dice or IoU are.
+We also draw on the WildUAV forest inspection dataset
+work~\cite{blaga2024wilduav} as evidence that forest-aerial-segmentation
+research so far has focused effort on acquiring larger and more varied
+labeled imagery rather than on what the resulting models attend to.
 
 \section{Proposed Method}
 
@@ -219,21 +269,82 @@ our implementation keeps $A$ attached to the autograd graph via
 \texttt{create\_graph=True} so one combined \texttt{backward()} reaches all
 parameters.
 
+\begin{algorithm}[t]
+\caption{One training step of the attention-consistency variant}
+\label{alg:train}
+\begin{algorithmic}[1]
+\Require image $X$, ground-truth mask $Y$, model $(E, D)$, weights $\lambda_1,\lambda_2$
+\State $F \gets E(X)$ \Comment{encoder features, all 4 stages}
+\State $P \gets D(F)$ \Comment{decoder segmentation output}
+\State $A \gets \mathrm{Rollout}(F_4)$ \Comment{stage-4 attention only, autograd-attached}
+\State $A^{*} \gets \mathrm{Gaussian}(Y, \sigma{=}8)$ \Comment{soft attention target}
+\State $L \gets L_{dice}(P,Y) + \lambda_1 L_{bce}(P,Y) + \lambda_2 L_{att}(A,A^{*})$
+\State $L$.backward(create\_graph=True) \Comment{double backprop: $A$ depends on $\nabla F$}
+\State optimizer.step()
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:train} summarizes one training step. At inference, only
+lines 1--2 run --- the Rollout/attention path is training-only supervision,
+so deployment cost equals vanilla SegFormer-B0.
+
+\subsection{AAMO: Average Attention--Mask Overlap}
+Standard practice evaluates attention maps only qualitatively, by visual
+inspection of heatmaps. We instead define AAMO to make attention fidelity
+reportable and comparable the same way Dice or IoU are. Given normalized
+attention $A \in [0,1]^{256\times256}$ and ground-truth mask $Y$, AAMO is the
+fraction of forest pixels covered by thresholded attention:
+\begin{align}
+A_{thr} &= \mathbb{1}[A > \tau], \quad \tau = 0.5 \\
+\mathrm{AAMO} &= \frac{|A_{thr} \cap Y|}{|Y|}
+\end{align}
+i.e.\ AAMO is the recall of the ground-truth forest region under
+thresholded attention: 1.0 means attention fully covers the forest mask,
+0.0 means no overlap. We additionally report $\mathrm{AAMO_{dice}}$ and
+$\mathrm{AAMO_{IoU}}$ (Dice and IoU between $A_{thr}$ and $Y$) as symmetric
+overlap checks, since AAMO alone does not penalize attention that also
+covers large non-forest regions.
+
 \section{Experimental Setup}
 \textbf{Dataset.} 5{,}108 RGB aerial images ($256{\times}256$) with binary
 forest/non-forest masks; 70/15/15 stratified train/val/test split. A full
 dataset audit confirms 0 orphaned image/mask pairs, 0 unreadable files, and
 that masks are already effectively binary --- no pixel sits more than 9 grey
 levels from pure black or white, and the mid-gray band (32--223) is empty.
+The dataset is moderately forest-majority (mean forest-pixel ratio
+$0.6117 \pm 0.3306$ per mask), which we account for by reporting Dice/IoU/F1
+rather than pixel accuracy alone, since accuracy alone would be inflated by
+the majority class.
 Preliminary results below use a 400/60/60 CPU-scale subset, not the full
 5{,}108 images.
 
 \textbf{Baselines.} U-Net (CNN) and vanilla SegFormer-B0 (no attention
-loss), isolating the effect of the proposed attention supervision.
+loss), isolating the effect of the proposed attention supervision, plus
+DeepLabV3+ (MobileNetV3 backbone) as an additional optional CNN reference
+point.
 
 \textbf{Metrics.} Dice, IoU, F1 (segmentation quality); parameter count,
 GFLOPs, FPS (efficiency); AAMO --- normalized overlap between thresholded
 attention and the ground-truth forest mask (interpretability).
+
+\textbf{Implementation details.} SegFormer-B0 variants are trained with
+AdamW (lr $=6{\times}10^{-5}$), batch size 4 (vanilla) / 1 (attention
+variant, due to the double-backpropagation memory cost), Gaussian target
+smoothing $\sigma = 8$, $\lambda_2 = 0.3$, and $L_{att}$ using the MSE
+formulation, seed 42. Both the MSE and KL-divergence formulations of
+$L_{att}$ are implemented and unit-tested, but only MSE has been evaluated
+on trained checkpoints so far. All code runs CPU-only in this preliminary
+phase; the full-scale run uses an identical training loop on a GPU runtime,
+changing only dataset size and epoch count.
+
+\textbf{Reproducibility.} The attention-extraction and loss implementation
+is covered by 13 unit tests independent of any trained model (8 for the
+Attention Consistency Loss, 5 verifying Grad-Rollout output shapes at each
+SegFormer stage), and AAMO by 10 further tests on synthetic
+attention/mask pairs, all passing. Dataset integrity is checked by a
+standalone auditing script (pairing, geometry, value spread, class balance)
+that exits non-zero on failure, so it can run as a pre-flight gate before
+training rather than being assumed correct.
 
 \section{Preliminary Results}
 
@@ -265,14 +376,29 @@ SegFormer-B0 + $L_{att}$ & 0.8191 & 0.6936 & 0.8191 & \textbf{0.432} \\
 \end{tabular}
 \end{table}
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/attention_drift_02_post_train.png}
+\caption{Qualitative comparison on a held-out test image (left to right):
+input image; ground-truth forest mask; vanilla SegFormer-B0 attention
+(Grad-Rollout); attention after adding the Attention Consistency Loss. The
+attention-consistency map is visibly broader and warmer over more of the
+image, consistent with the large AAMO gain, but does not yet cleanly
+separate canopy from non-forest by eye; the vanilla map is dominated by a
+corner artifact rather than the motivating roads/shadows failure mode.
+Genuine output of the trained checkpoints, not cherry-picked, from an
+8-epoch/400-image smoke run.}
+\label{fig:attn}
+\end{figure*}
+
 \textbf{Limitations of these preliminary numbers.} Eight epochs on 400
 images is a smoke-scale proof that the pipeline is correct end-to-end, not
 a reliable trend; the full 5{,}108-image, 20-epoch run is pending.
-Qualitative attention-drift figures do not yet show as clean a story as the
-AAMO number: the vanilla model's attention exhibits a corner artifact
-rather than the motivating roads/shadows failure mode, plausibly from
-undertraining, and warrants revisiting once the full-scale model has
-properly converged.
+Figure~\ref{fig:attn} shows the qualitative attention-drift comparison does
+not yet tell as clean a story as the AAMO number: the vanilla model's
+attention exhibits a corner artifact rather than the motivating
+roads/shadows failure mode, plausibly from undertraining, and warrants
+revisiting once the full-scale model has properly converged.
 
 \section{Discussion}
 The large AAMO gain relative to a small Dice/IoU change suggests attention
@@ -282,6 +408,29 @@ off against accuracy, though this must be confirmed with the full-scale run
 and a multi-seed ablation study before drawing firm conclusions. Both the
 MSE and KL-divergence formulations of $L_{att}$ are implemented; only MSE
 has been evaluated so far.
+
+\textbf{Threats to validity.} (1) \emph{Scale.} Results use 7.8\% of the
+dataset (400/5{,}108 images) for 8 epochs; the direction of the AAMO gain
+is unlikely to reverse, but its magnitude may shift once the model is
+properly converged. (2) \emph{Single seed.} No run has been repeated with a
+different seed, so the reported numbers carry unknown variance; Phase 2's
+multi-seed ablation is required before any number here is treated as final.
+(3) \emph{CNN baseline provenance.} The reported U-Net baseline's training
+protocol is still being reconciled against the SegFormer runs' shared split
+and training loop, and may be revised. (4) \emph{Rollout restriction.}
+Restricting Gradient-weighted Attention Rollout to SegFormer's stage-4
+attention avoids the invalid rectangular-matrix case but discards
+information from stages 1--3, which this work does not yet quantify the
+cost of.
+
+\textbf{Broader impact.} Forest-cover monitoring increasingly informs
+deforestation-tracking and conservation-policy decisions, where an
+automated model's \emph{explanation} of a prediction --- not just its
+accuracy --- affects whether domain experts and policymakers can trust it.
+An attention map that reliably attends to canopy rather than roads or
+shadows is a step toward auditable forest monitoring, but these preliminary,
+small-scale, single-seed results are not yet reliable enough to inform
+real deforestation-monitoring decisions.
 
 \section{Conclusion and Future Work}
 We presented an explainability-guided SegFormer-B0 that supervises internal

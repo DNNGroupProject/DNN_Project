@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{10}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -103,6 +103,17 @@
   Forest Segmentation Across Plantation and Natural Forests with
   Attention-Refined {PP-LiteSeg} Networks}.
 \newblock \bibinfo{journal}{\emph{Remote Sensing}} (\bibinfo{year}{2026}).
+\newblock
+
+
+\bibitem[Ronneberger et~al\mbox{.}(2015)]%
+        {ronneberger2015unet}
+\bibfield{author}{\bibinfo{person}{Olaf Ronneberger}, \bibinfo{person}{Philipp
+  Fischer}, {and} \bibinfo{person}{Thomas Brox}.}
+  \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{{U-Net}: Convolutional Networks for Biomedical
+  Image Segmentation}. In \bibinfo{booktitle}{\emph{Medical Image Computing and
+  Computer-Assisted Intervention (MICCAI)}}.
 \newblock
 
 
