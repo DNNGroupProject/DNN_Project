@@ -220,10 +220,13 @@ our implementation keeps $A$ attached to the autograd graph via
 parameters.
 
 \section{Experimental Setup}
-\textbf{Dataset.} 5{,}000 RGB aerial images ($256{\times}256$) with binary
-forest/non-forest masks; 70/15/15 stratified train/val/test split.
+\textbf{Dataset.} 5{,}108 RGB aerial images ($256{\times}256$) with binary
+forest/non-forest masks; 70/15/15 stratified train/val/test split. A full
+dataset audit confirms 0 orphaned image/mask pairs, 0 unreadable files, and
+that masks are already effectively binary --- no pixel sits more than 9 grey
+levels from pure black or white, and the mid-gray band (32--223) is empty.
 Preliminary results below use a 400/60/60 CPU-scale subset, not the full
-5{,}000 images.
+5{,}108 images.
 
 \textbf{Baselines.} U-Net (CNN) and vanilla SegFormer-B0 (no attention
 loss), isolating the effect of the proposed attention supervision.
@@ -238,16 +241,24 @@ Table~\ref{tab:results} reports an 8-epoch, 400-image CPU smoke run. AAMO
 increases approximately $30\times$ (0.0144 $\to$ 0.432) with the
 attention-consistency variant, while Dice and IoU also improve slightly
 over vanilla SegFormer-B0, suggesting the attention supervision does not
-cost segmentation accuracy at this scale.
+cost segmentation accuracy at this scale. We additionally report
+DeepLabV3+ (MobileNetV3 backbone) as an optional CNN reference point beyond
+U-Net; on a 200-image smoke run it trails both U-Net and SegFormer-B0 on
+Dice/IoU and shows a strong precision/recall imbalance (precision 0.59,
+recall 0.98), indicating a bias toward over-predicting forest rather than
+delineating boundaries precisely.
 
 \begin{table}[t]
-\caption{Preliminary comparison (CPU smoke run, 400/60/60 images, 8 epochs).}
+\caption{Preliminary comparison (CPU/local smoke runs; SegFormer variants:
+400/60/60 images, 8 epochs; DeepLabV3+: 200-image smoke run, optional
+extra baseline).}
 \label{tab:results}
 \begin{tabular}{@{}lccc c@{}}
 \toprule
 Model & Dice & IoU & F1 & AAMO \\
 \midrule
 U-Net (CNN) & 0.8492 & 0.7379 & 0.8492 & n/a \\
+DeepLabV3+ (MobileNetV3) & 0.7369 & 0.5834 & 0.7369 & n/a \\
 SegFormer-B0 & 0.8017 & 0.6690 & 0.8017 & 0.0144 \\
 SegFormer-B0 + $L_{att}$ & 0.8191 & 0.6936 & 0.8191 & \textbf{0.432} \\
 \bottomrule
@@ -256,7 +267,7 @@ SegFormer-B0 + $L_{att}$ & 0.8191 & 0.6936 & 0.8191 & \textbf{0.432} \\
 
 \textbf{Limitations of these preliminary numbers.} Eight epochs on 400
 images is a smoke-scale proof that the pipeline is correct end-to-end, not
-a reliable trend; the full 5{,}000-image, 20-epoch run is pending.
+a reliable trend; the full 5{,}108-image, 20-epoch run is pending.
 Qualitative attention-drift figures do not yet show as clean a story as the
 AAMO number: the vanilla model's attention exhibits a corner artifact
 rather than the motivating roads/shadows failure mode, plausibly from

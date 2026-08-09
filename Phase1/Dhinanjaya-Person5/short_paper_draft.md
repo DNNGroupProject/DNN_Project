@@ -1,10 +1,18 @@
 > **Status: Week 4 work-in-progress draft**, assembled by Person 5 from
 > `related_work.md`, `intro_and_pipeline.md`, the proposal PDF, and the
 > real Phase 1 results in `Phase1/Dinura-Person3/README.md` and
-> `Phase1/Lasana-Person4_Evaluation/results/`. Ready to port into the IEEE
-> conference template — not yet formatted, not yet reviewed by the rest of
-> the team (§6.1.2 review step still pending). Citation numbers are
-> provisional pending final bibliography.
+> `Phase1/Lasana-Person4_Evaluation/results/`. **Superseded as the
+> submission target by `paper_acm/main.tex`** — the course requires the ACM
+> template, not IEEE, and that version is already built and verified to
+> compile (3 pages incl. references, within the 4-page limit). This
+> markdown file is kept as the staging/content source; not yet reviewed by
+> the rest of the team (§6.1.2 review step still pending). Citation numbers
+> are provisional pending final bibliography.
+>
+> **Known unresolved issue:** the U-Net baseline row below conflates two
+> different models (Lasana's Keras U-Net vs. Chanupa's PyTorch U-Net) — see
+> `unet_baseline_reconciliation.md`. Not fixed in this draft yet; waiting on
+> Chanupa (checkpoint) and Lasana (adapter + re-eval).
 
 # Explainability-Guided SegFormer for Forest Cover Segmentation Using Attention Consistency Supervision
 
@@ -34,7 +42,7 @@ preliminary small-scale experiments (8-epoch, 400-image CPU runs), the
 proposed method raises AAMO from 0.0144 to 0.432 relative to a vanilla
 SegFormer-B0 baseline while also slightly improving Dice (0.8017→0.8191)
 and IoU (0.6690→0.6936), against a U-Net baseline (Dice 0.8492). Full-scale
-validation (5,000 images, complete ablation study) is ongoing (Phase 2).
+validation (5,108 images, complete ablation study) is ongoing (Phase 2).
 
 ## 1. Introduction
 
@@ -163,13 +171,19 @@ Week 10 stretch goal, not a Phase 1 deliverable.
 
 ## 4. Experimental Design
 
-**Dataset.** 5,000 RGB aerial images, 256×256, binary forest/non-forest
-masks; 70/15/15 stratified train/val/test split (proposal §4.1). *Current
-Phase 1 results below use a 400/60/60 CPU-smoke-scale subset, not the full
-5,000 — see caveat under Results.*
+**Dataset.** 5,108 RGB aerial images, 256×256, binary forest/non-forest
+masks (proposal §4.1 estimated ~5,000; the audited actual count is 5,108 —
+see `Phase2/Chanupa-Person1/results/mask_audit.md`); 70/15/15 stratified
+train/val/test split. Dataset integrity was verified directly rather than
+assumed: 0 orphaned image/mask pairs, 0 unreadable files, and mask values
+are already effectively binary (no pixel more than 9 grey levels from pure
+black/white; the 32–223 mid-gray band is empty). *Current Phase 1 results
+below use a 400/60/60 CPU-smoke-scale subset, not the full 5,108 — see
+caveat under Results.*
 
 **Baselines.** U-Net (CNN) and vanilla SegFormer-B0 (no attention loss),
-isolating the effect of the proposed attention supervision.
+isolating the effect of the proposed attention supervision, plus DeepLabV3+
+(MobileNetV3 backbone) as an optional additional CNN reference point.
 
 **Metrics.** Dice, IoU, Precision, Recall, F1 (segmentation quality); params,
 FLOPs, FPS (efficiency); AAMO (interpretability — normalized overlap between
@@ -183,6 +197,7 @@ CPU smoke run, 400/60/60 train/val/test images, 8 epochs
 | Model | Dice | IoU | F1 | AAMO | Params | GFLOPs | FPS |
 |---|---|---|---|---|---|---|---|
 | U-Net (CNN baseline) | 0.8492 | 0.7379 | 0.8492 | n/a | 1.95M | n/a | 3.48 |
+| DeepLabV3+ (MobileNetV3, extra baseline) | 0.7369 | 0.5834 | 0.7369 | n/a | 11.02M | n/a | 8.51 |
 | SegFormer-B0 (no attention loss) | 0.8017 | 0.6690 | 0.8017 | 0.0144 | 3.71M | 1.69 | 12.45 |
 | SegFormer-B0 + Attention Consistency Loss | 0.8191 | 0.6936 | 0.8191 | **0.432** | 3.71M | 1.69 | 14.55 |
 | SegFormer-B0 + Attention Consistency + Boundary Loss | – | – | – | pending | – | – | – |
@@ -190,24 +205,31 @@ CPU smoke run, 400/60/60 train/val/test images, 8 epochs
 **Headline result:** AAMO increases ~30× (0.0144 → 0.432) with the
 attention-consistency variant, while Dice/IoU also improve slightly over
 vanilla SegFormer-B0 — the attention supervision does not appear to cost
-segmentation accuracy at this scale.
+segmentation accuracy at this scale. DeepLabV3+, included as an optional
+extra CNN reference point beyond U-Net, trails both U-Net and SegFormer-B0
+on Dice/IoU on a 200-image smoke run, with a strong precision/recall
+imbalance (precision 0.592, recall 0.976) — it over-predicts forest broadly
+rather than delineating boundaries precisely.
 
 **Caveats (must be resolved before final submission):**
 - 8 epochs / 400 images is a smoke-scale proof of pipeline correctness, not
-  a reliable trend — re-run at the full 5,000-image/20-epoch scale
+  a reliable trend — re-run at the full 5,108-image/20-epoch scale
   (`segformer_full_scale_colab.ipynb`) before treating these numbers as
-  final.
+  final. Same caveat applies to DeepLabV3+'s 200-image smoke run.
 - Qualitative attention-drift figures (`results/attention_drift_figures/`)
   don't yet tell as clean a story as the AAMO number: the vanilla model's
   attention shows a "hot corner" artifact rather than the motivating
   roads/shadows failure mode, plausibly from undertraining. Worth revisiting
   once the full-scale run converges properly.
-- The multi-seed ablation table
-  (`Phase1/Lasana-Person4_Evaluation/results/ablation_mean_std.md`) is
-  still a scaffold (0 seeds recorded, SegFormer rows "pending") despite the
-  single-run numbers above already existing in `baseline_comparison.md` —
-  reconcile these two files before Phase 2's ablation study is reported, so
-  the mean±std table isn't mistaken for stale/unfilled.
+- **Resolved 2026-08-09:** the multi-seed ablation table
+  (`Phase1/Lasana-Person4_Evaluation/results/ablation_mean_std.md`) now
+  matches the single-run numbers in `baseline_comparison.md` (Seeds: 1 for
+  each trained model; only the boundary-loss row remains genuinely
+  pending). Still only single-seed, though — true mean±std still needs
+  multiple seeds per config, which is Phase 2 scope.
+- **Unresolved:** the U-Net row above conflates two different models — see
+  the status note at the top of this file and
+  `unet_baseline_reconciliation.md`.
 
 ## 6. Expected Contributions
 
@@ -263,9 +285,12 @@ Semantic Segmentation and Depth Estimation," *arXiv:2403.06621*, 2024.
 
 ## Open items before this is submission-ready
 
-- [ ] Port into actual IEEE conference LaTeX/Word template (not done here — this is content only).
-- [ ] Author names, affiliations, registration numbers.
+- [x] Port into the course-required ACM template (not IEEE — see `paper_acm/main.tex`, compiles at 3 pages incl. references).
+- [x] Author names, affiliations — filled in `paper_acm/main.tex` (real names, no registration numbers required for the short-paper phase per the course spec).
+- [x] Reconcile `baseline_comparison.md` vs. `ablation_mean_std.md` (see §5 caveat — resolved 2026-08-09).
 - [ ] Circulate to Persons 1–4 for co-author review of their sections (§6.1.2 of the proposal).
-- [ ] Reconcile `baseline_comparison.md` vs. `ablation_mean_std.md` (see §5 caveat).
+- [ ] Resolve the U-Net baseline conflation (`unet_baseline_reconciliation.md`) — blocked on Chanupa (checkpoint export) and Lasana (adapter + re-eval).
 - [ ] Replace CPU-smoke-scale numbers with full-scale Colab results once available.
+- [ ] Apply §11's colour-highlighting + margin-comment requirement (one colour per author) before Moodle submission — not started on any draft yet.
+- [ ] Rewrite AI-assisted prose (this draft, `related_work.md`, `intro_and_pipeline.md`) substantially in your own words so it counts as your identifiable individual contribution per §11.
 - [ ] Slide deck summarizing this draft — see `slide_deck_outline.md`.
