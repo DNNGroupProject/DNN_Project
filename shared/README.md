@@ -1,4 +1,52 @@
-# Shared experiment tracking (Weights & Biases)
+# Shared utilities
+
+Two things live here, both meant to be imported by more than one person:
+
+- [`augmentation.py`](augmentation.py) — the shared train-time augmentation
+  pipeline (Person 1, proposal §6.1.2 Weeks 1–2).
+- [`experiment_tracking.py`](experiment_tracking.py) — shared Weights & Biases
+  config, opt-in.
+
+---
+
+## Augmentation pipeline
+
+Flips, 90° rotations, brightness and contrast, applied to an (image, mask)
+pair. numpy only — no torch, no cv2, no albumentations — so it imports from
+anyone's pipeline without adding a dependency.
+
+```python
+import numpy as np
+from shared.augmentation import augment_pair
+
+rng = np.random.default_rng(42)      # once, e.g. in your Dataset.__init__
+image, mask = augment_pair(image, mask, rng)
+```
+
+Call it **after** `/255.0` and **before** the ImageNet normalize: brightness
+and contrast only mean something while pixels are in [0,1]. Pass one seeded
+generator for the whole run so results are reproducible, and use
+`num_workers=0` (or reseed per worker) — forked DataLoader workers each
+inherit a copy of the generator and would replay identical augmentations.
+
+Geometric ops move the image *and* the mask; photometric ops move the image
+only. There is deliberately no arbitrary-angle rotation or scaling: those
+interpolate, and interpolating a label map manufactures exactly the gray
+boundary pixels that [`Phase2/Chanupa-Person1/results/mask_audit.md`](../Phase2/Chanupa-Person1/results/mask_audit.md)
+measured as absent from this dataset. Flips and `rot90` leave the mask exactly
+binary.
+
+`AugmentConfig` holds the probabilities and ranges; `NO_AUGMENT` turns
+everything off and makes `augment_pair` an identity function.
+
+Used by [`Phase1/Chanupa-Person1/dataset.py`](../Phase1/Chanupa-Person1/dataset.py)
+and measured by its
+[augmentation ablation](../Phase1/Chanupa-Person1/README.md#augmentation-ablation-weeks-34).
+Tests: `python Phase1/Chanupa-Person1/tests/test_augmentation.py`.
+
+---
+
+## Experiment tracking (Weights & Biases)
 
 One shared W&B project — `dnn-forest-segformer-xai` — so all four technical
 members' runs (baselines, attention-loss training, ablation study) are
