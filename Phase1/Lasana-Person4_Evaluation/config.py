@@ -5,8 +5,17 @@ ROOT = Path(__file__).resolve().parent
 PHASE1 = ROOT.parent
 PROJECT = PHASE1.parent  # DNN_Project repo root
 
-# Shared Forest Segmented dataset (repo-root Lasana/)
-DATA_DIR = PROJECT / "Lasana" / "dataset" / "Forest Segmented" / "Forest Segmented"
+# Shared Forest Segmented dataset (repo-root Lasana/, gitignored local copy).
+# Falls back to the git-tracked copy so evaluate.py runs on a fresh clone too.
+_LOCAL_DATA_DIR = PROJECT / "Lasana" / "dataset" / "Forest Segmented" / "Forest Segmented"
+_TRACKED_DATA_DIR = PHASE1 / "Kalana-Person2"
+
+if _LOCAL_DATA_DIR.exists():
+    DATA_DIR = _LOCAL_DATA_DIR
+else:
+    print(f"[config] {_LOCAL_DATA_DIR} not found — falling back to tracked dataset at {_TRACKED_DATA_DIR}")
+    DATA_DIR = _TRACKED_DATA_DIR
+
 IMG_DIR = DATA_DIR / "images"
 MASK_DIR = DATA_DIR / "masks"
 

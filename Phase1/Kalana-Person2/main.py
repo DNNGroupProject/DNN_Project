@@ -121,10 +121,10 @@ for file in image_files:
         continue
 
     # Resize mask
-    mask = cv2.resize(mask, (IMG_SIZE, IMG_SIZE))
+    mask = cv2.resize(mask, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_NEAREST)
 
     # Convert mask values to 0 or 1
-    mask = mask / 255.0
+    mask = (mask > 127).astype(np.float32)
 
     # Add channel dimension
     mask = np.expand_dims(mask, axis=-1)
