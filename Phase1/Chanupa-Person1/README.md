@@ -155,36 +155,52 @@ downstream can load them. `checkpoints/` is the landing spot. The steps:
 2. If the session is gone: Runtime → Change runtime type → GPU (T4), set
    `DATA_ROOT`, Run all. Seed 42 and the split are fixed, so it reproduces the
    run above rather than making a new one.
-3. **Halve it before downloading.** fp32 is ~124 MB (31,037,698 params × 4
-   bytes) and GitHub hard-rejects any file over 100 MB, so a straight commit
-   will bounce on push:
+3. **It won't fit in git as-is.** The file on Drive is 119 MiB (≈125 MB —
+   31,037,698 params × 4 bytes) and GitHub hard-rejects anything over 100 MiB,
+   so a straight commit bounces on push. Nothing else in the repo is close:
+   every `.pt` under `Phase1/` is 14.9 MB, and the largest checkpoint anywhere
+   is 23.6 MB. There is no `.gitattributes`, so no Git LFS either.
+4. **A blanket fp16 cast does not work — measured, don't repeat it.** Halving
+   the whole `state_dict` with `{k: v.half() ...}` gets the file to ~60 MB but
+   costs **10 Dice points**:
+
+   | | Test Dice | Test IoU |
+   |---|---|---|
+   | fp32 (committed baseline) | 0.8563 | 0.7534 |
+   | blanket fp16 round-trip | **0.7510** | **0.6095** |
+
+   That is far past rounding. The likely culprit is the BatchNorm buffers
+   rather than the conv weights: fp16 tops out at 65504 and loses normals
+   below ~6e-5, and BN divides by `sqrt(running_var + eps)`, so one buffer
+   going to `inf` or `0` wrecks that layer while every weight around it stays
+   fine. The U-Net has 18 BN layers. **Untested idea**, if anyone wants to
+   pursue it — cast only the bulk weight tensors and leave the small buffers
+   in fp32 (the conv weights are essentially all 31 M parameters, so the size
+   saving is nearly the same):
 
    ```python
-   sd = torch.load("/content/drive/MyDrive/unet_baseline.pt", map_location="cpu")
-   torch.save({k: v.half() for k, v in sd.items()},
-              "/content/drive/MyDrive/unet_baseline_best.pt")   # ~62 MB
+   out = {k: (v.half() if v.is_floating_point() and v.numel() >= 10_000 else v)
+          for k, v in sd.items()}
    ```
 
-4. Check the cast was free — re-run Step 6 with the fp16 weights loaded back:
+   Verify any such variant the same way before shipping it: load it into a
+   fresh `build_model()`, run the test set, and confirm 0.8563. Do it in
+   Colab — on a laptop CPU that pass takes over half an hour.
+5. **So the checkpoint is not committed yet, and how to ship it is an open
+   decision.** Three options, none of them free:
+   - Git LFS (`git lfs track "*.pt"`) — clean, but everyone has to install LFS.
+   - A Drive link in this README — zero setup, but the weights stop being
+     versioned with the code.
+   - A verified partial-precision cast, per step 4 — smallest change to the
+     current workflow, but needs someone to find and fix what fp16 breaks.
 
-   ```python
-   sd = torch.load("/content/drive/MyDrive/unet_baseline_best.pt", map_location=device)
-   model.load_state_dict({k: v.float() for k, v in sd.items()})
-   ```
-
-   Test Dice should still read 0.8563. Do this in Colab — on a laptop CPU the
-   766-image test pass takes over half an hour. Report whatever it actually
-   prints; if it moved, say so rather than shipping the fp16 file.
-5. Download it: Drive → right-click → Download, or
-   `from google.colab import files; files.download("/content/drive/MyDrive/unet_baseline_best.pt")`.
-6. Drop it in as `Phase1/Chanupa-Person1/checkpoints/unet_baseline_best.pt` —
-   the `<model>_<variant>_{best,last}.pt` naming from
-   [CONTRIBUTING.md](../../CONTRIBUTING.md).
-7. Commit and push. 62 MB is still ~4× the largest checkpoint in the repo
-   today (every `.pt` in `Phase1/` is 14.9 MB), so if the push is refused the
-   fallbacks are Git LFS (`git lfs track "*.pt"` — needs everyone to install
-   LFS) or a Drive link in this README. Person 4 consumes the file, so that's
-   a call to make with them.
+   Person 4 consumes the file, so it's a call to make with them.
+6. Whichever route wins, the file lands at
+   `Phase1/Chanupa-Person1/checkpoints/unet_baseline_best.pt` — the
+   `<model>_<variant>_{best,last}.pt` naming from
+   [CONTRIBUTING.md](../../CONTRIBUTING.md). Keep the untouched fp32 copy on
+   Drive (`unet_baseline_20ep.pt`) either way; it is the only full-precision
+   copy that exists.
 
 What Person 4 needs to write `adapters/unet_torch.py` against it:
 
@@ -207,8 +223,9 @@ What Person 4 needs to write `adapters/unet_torch.py` against it:
 - **The full-scale augmentation ablation.** The harness and the smoke run are
   done; the 20-epoch, full-dataset, both-arms run needs a GPU. That is the
   number the paper should quote, not the smoke one above.
-- **The trained checkpoint**, per the steps above — it needs a Colab session,
-  so nobody but me can produce it.
+- **The trained checkpoint.** The weights themselves exist (119 MiB on Drive,
+  from the Jul 25 run), so this is no longer "needs a re-train" — it's the
+  open how-to-ship-it decision in step 5 above.
 
 Neither of these touches the committed baseline numbers: `augment` defaults to
 off everywhere, and the notebook was not modified.
