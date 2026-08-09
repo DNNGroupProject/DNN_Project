@@ -16,11 +16,13 @@ measured against. Proposal §6.1.2:
 
 ```
 unet_baseline_colab.ipynb        U-Net from scratch, full dataset, 20 epochs (GPU/Colab)
-unet_model.py                    UNet + dice_iou_score, lifted out of the notebook
+unet_model.py                    UNet + dice_iou_score + load_unet, lifted out of the notebook
 dataset.py                       ForestSegDataset + seeded split, ditto, plus the augment hook
 augmentation_ablation.py         Trains with vs. without augmentation, writes the table
+make_fixture_checkpoint.py       Writes the untrained loader-test checkpoint below
 tests/test_augmentation.py       15 tests for shared/augmentation.py, synthetic arrays only
-checkpoints/                     Where the trained .pt goes (see below)
+tests/test_unet_model.py         9 tests for the loader helpers and the fixture
+checkpoints/                     unet_fixture_random.pt (untrained); the real .pt goes here too
 test_metrics.txt                 Final test numbers + params/GFLOPs
 training_log.csv                 Per-epoch train/val loss, Dice, IoU (20 rows)
 training_curves.png              Loss and Dice/IoU curves
@@ -52,7 +54,7 @@ The ablation and the tests run locally, no Drive and no GPU — they read the
 5,108 pairs committed at `Phase1/Kalana-Person2/{images,masks}`:
 
 ```bash
-python tests/test_augmentation.py
+python tests/test_augmentation.py && python tests/test_unet_model.py
 ```
 
 ```bash
@@ -202,7 +204,38 @@ downstream can load them. `checkpoints/` is the landing spot. The steps:
    Drive (`unet_baseline_20ep.pt`) either way; it is the only full-precision
    copy that exists.
 
-What Person 4 needs to write `adapters/unet_torch.py` against it:
+### Don't wait for it — there's a fixture
+
+`checkpoints/unet_fixture_random.pt` (0.5 MB, committed) is an **untrained,
+random-init** U-Net saved in exactly the format the real checkpoint uses: a
+bare `state_dict`, same key names, same structure. It exists so
+`adapters/unet_torch.py` can be written and tested today instead of waiting on
+the decision above — every line of the loading path is exercisable against it,
+and swapping in the trained file later changes nothing but the path.
+
+**It produces noise, not predictions.** The guard against anyone mistaking it
+for the baseline is structural rather than just a naming convention: the
+fixture is (4,8,16,32) wide while the real model is (64,128,256,512), so code
+that assumes the trained architecture hits a shape mismatch and fails loudly.
+`tests/test_unet_model.py` pins that behaviour.
+
+Load either file with the same call — it infers the width from the checkpoint
+and casts any half-precision weights back to fp32, so whichever route the real
+file ends up shipping by, this side doesn't change:
+
+```python
+from unet_model import load_unet
+
+model = load_unet("checkpoints/unet_fixture_random.pt")   # or the real one
+preds = model(batch).argmax(dim=1)                         # eval mode already set
+```
+
+Regenerate it with `python make_fixture_checkpoint.py` (seeded, so it rewrites
+byte-identically and won't churn the diff).
+
+### The contract
+
+What Person 4 needs to write `adapters/unet_torch.py` against the real file:
 
 | | |
 |---|---|
@@ -216,7 +249,7 @@ What Person 4 needs to write `adapters/unet_torch.py` against it:
 | Direction | What |
 |---|---|
 | I need | Nothing — the notebook is self-contained given the dataset. |
-| I hand off | The U-Net baseline row (Dice/IoU/params/GFLOPs) to Person 4's comparison table, plus `unet_model.py` and the checkpoint above so they can load it; `shared/augmentation.py` to Persons 2 and 3 if they want augmented runs; the dataset split convention to Persons 2 and 3. |
+| I hand off | The U-Net baseline row (Dice/IoU/params/GFLOPs) to Person 4's comparison table, plus `unet_model.load_unet` and the fixture checkpoint so their adapter can be built and tested before the real weights land; `shared/augmentation.py` to Persons 2 and 3 if they want augmented runs; the dataset split convention to Persons 2 and 3. |
 
 ## What's still owed
 

@@ -98,6 +98,44 @@ def build_model(device="cpu", features=(64, 128, 256, 512)):
     return model.to(device)
 
 
+def features_from_state_dict(state_dict):
+    """Read a checkpoint's channel widths back out of it.
+
+    Checkpoints here are bare state_dicts with no metadata, so a loader has to
+    know the widths before it can build a model to load into. Rather than
+    hardcode (64,128,256,512) and break on anything else, read them off the
+    first conv of each encoder stage: `downs.<i>.block.0.weight` has shape
+    (features[i], in_channels, 3, 3).
+    """
+    widths = []
+    i = 0
+    while f"downs.{i}.block.0.weight" in state_dict:
+        widths.append(int(state_dict[f"downs.{i}.block.0.weight"].shape[0]))
+        i += 1
+    if not widths:
+        raise ValueError("not a U-Net state_dict: no 'downs.0.block.0.weight' key")
+    return tuple(widths)
+
+
+def load_unet(path, device="cpu"):
+    """Build the right U-Net for a checkpoint, load it, and put it in eval mode.
+
+    Covers the two things a caller shouldn't have to guess: the architecture
+    width (inferred above) and the storage dtype (a half-precision checkpoint
+    is cast back to float32 on the way in, so however the weights end up being
+    shipped, this side doesn't change).
+    """
+    sd = torch.load(path, map_location="cpu")
+    sd = {k: (v.float() if v.is_floating_point() else v) for k, v in sd.items()}
+    model = UNet(
+        in_channels=sd["downs.0.block.0.weight"].shape[1],
+        out_channels=sd["final_conv.weight"].shape[0],
+        features=features_from_state_dict(sd),
+    )
+    model.load_state_dict(sd)
+    return model.to(device).eval()
+
+
 def dice_iou_score(pred_mask, true_mask, eps=1e-6):
     """pred_mask, true_mask: bool tensors, same shape. Dice/IoU for the
     'forest' (positive) class."""
