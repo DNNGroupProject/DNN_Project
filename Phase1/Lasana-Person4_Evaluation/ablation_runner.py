@@ -7,6 +7,9 @@ Proposal configs (Table 2):
   3. SegFormer-B0 + Attention Consistency Loss
   4. SegFormer-B0 + Attention Consistency + Boundary Loss (stretch)
 
+Extra (if time allows):
+  5. DeepLabV3+ (MobileNetV3) — optional CNN/ASPP baseline
+
 Multi-seed: report mean ± std when multiple seed result JSONs exist.
 
 Usage
@@ -14,6 +17,7 @@ Usage
     python ablation_runner.py
     python ablation_runner.py --seeds 42 43 44
     python ablation_runner.py --only unet
+    python ablation_runner.py --only deeplab
 """
 from __future__ import annotations
 
@@ -45,6 +49,11 @@ CONFIGS = [
         "key": "segformer_boundary",
         "model": "segformer-boundary",
         "label": "SegFormer-B0 + Attention Consistency + Boundary Loss",
+    },
+    {
+        "key": "deeplab",
+        "model": "deeplab",
+        "label": "DeepLabV3+ (MobileNetV3) — extra baseline",
     },
 ]
 
@@ -170,7 +179,10 @@ def main():
     p.add_argument(
         "--only",
         default=None,
-        help="Run only one config key: unet | segformer_vanilla | segformer_att | segformer_boundary",
+        help=(
+            "Run only one config key: unet | segformer_vanilla | segformer_att | "
+            "segformer_boundary | deeplab"
+        ),
     )
     p.add_argument("--max-samples", type=int, default=None)
     args = p.parse_args()
@@ -196,7 +208,9 @@ def main():
                     "dice": "-",
                     "iou": "-",
                     "f1": "-",
-                    "aamo": "n/a" if "U-Net" in cfg["label"] else "pending",
+                    "aamo": "n/a"
+                    if ("U-Net" in cfg["label"] or "DeepLab" in cfg["label"])
+                    else "pending",
                     "params": "n/a",
                     "gflops": "n/a",
                     "status": "pending_checkpoint",
@@ -217,7 +231,9 @@ def main():
                     "dice": "-",
                     "iou": "-",
                     "f1": "-",
-                    "aamo": "n/a" if "U-Net" in cfg["label"] else "pending",
+                    "aamo": "n/a"
+                    if ("U-Net" in cfg["label"] or "DeepLab" in cfg["label"])
+                    else "pending",
                     "params": "n/a",
                     "gflops": "n/a",
                 }

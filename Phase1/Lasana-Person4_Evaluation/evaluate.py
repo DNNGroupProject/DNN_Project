@@ -27,21 +27,34 @@ from metrics import ConfusionCounts, binarize, format_metrics, metrics_from_coun
 
 
 def get_adapter(model_name: str, checkpoint: Optional[str] = None):
-    from adapters import SegFormerAdapter, SegFormerStubAdapter, UnetKerasAdapter
-
     name = model_name.lower().strip()
     if name in ("unet", "u-net", "lasana"):
+        from adapters.unet_keras import UnetKerasAdapter
+
         ad = UnetKerasAdapter()
     elif name in ("segformer", "segformer-b0", "vanilla"):
+        from adapters.segformer import SegFormerAdapter
+
         ad = SegFormerAdapter("vanilla")
     elif name in ("segformer-att", "att"):
+        from adapters.segformer import SegFormerAdapter
+
         ad = SegFormerAdapter("att")
     elif name in ("segformer-boundary", "boundary"):
         # Boundary Refinement Module is a Phase 2 stretch goal (proposal
         # §3.4) — not implemented yet, still a stub.
+        from adapters.segformer_stub import SegFormerStubAdapter
+
         ad = SegFormerStubAdapter("boundary")
+    elif name in ("deeplab", "deeplabv3", "deeplabv3+", "deeplabv3plus"):
+        from adapters.deeplabv3 import DeepLabV3Adapter
+
+        ad = DeepLabV3Adapter()
     else:
-        raise SystemExit(f"Unknown --model {model_name}")
+        raise SystemExit(
+            f"Unknown --model {model_name}. "
+            "Use: unet | segformer | segformer-att | segformer-boundary | deeplab"
+        )
     ad.load(checkpoint)
     return ad
 

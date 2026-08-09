@@ -24,7 +24,7 @@ You own metrics, efficiency numbers, AAMO, baseline/ablation tables — not mode
 ## Layout
 
 ```text
-Person4_Evaluation/
+Phase1/Lasana-Person4_Evaluation/
   README.md
   config.py
   metrics.py
@@ -32,11 +32,15 @@ Person4_Evaluation/
   aamo.py
   evaluate.py
   ablation_runner.py
+  train_deeplab_extra.py      # optional DeepLabV3+ extra baseline
   adapters/
     __init__.py
     base.py
     unet_keras.py
+    segformer.py
     segformer_stub.py
+    deeplab_model.py
+    deeplabv3.py
   docs/
     PERSON4_GUIDE.md
   results/
@@ -49,7 +53,7 @@ Person4_Evaluation/
 ## Quick start
 
 ```bash
-cd Person4_Evaluation
+cd Phase1/Lasana-Person4_Evaluation
 
 # Week 1–3: evaluate existing Lasana U-Net
 python evaluate.py --model unet
@@ -60,16 +64,24 @@ python evaluate.py --model unet --max-samples 200
 # AAMO unit check (no SegFormer needed)
 python aamo.py
 
-# Ablation scaffold (fills available rows; stubs wait on Person 2/3)
+# Ablation scaffold
 python ablation_runner.py
 ```
 
-SegFormer evaluation needs Person 2’s checkpoint + attention hooks. Until then:
+### Extra baseline (DeepLabV3+ — if time allows)
 
 ```bash
-python evaluate.py --model segformer
-# → clear "waiting on Person 2" error
+# Train a smoke checkpoint (defaults: 400 samples, 5 epochs)
+python train_deeplab_extra.py
+
+# Evaluate and append to baseline_comparison table
+python evaluate.py --model deeplab
+
+# Or only this config in the ablation runner
+python ablation_runner.py --only deeplab
 ```
+
+SegFormer evaluation uses Person 2/3 checkpoints in `checkpoints/`.
 
 AAMO can be tested on precomputed attention maps:
 

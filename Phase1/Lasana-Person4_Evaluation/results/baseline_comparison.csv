@@ -3,3 +3,4 @@ U-Net (CNN baseline),0.8492,0.7379,0.8492,0.7943,0.9122,0.8111,n/a,1951105,n/a,3
 SegFormer-B0 (no attention loss),0.8017,0.669,0.8017,0.7064,0.9267,0.7526,0.0144,3714658,1.692,12.45,80.31
 SegFormer-B0 + Attention Consistency Loss,0.8191,0.6936,0.8191,0.7606,0.8873,0.7885,0.432,3714658,1.692,14.55,68.72
 SegFormer-B0 + Attention Consistency + Boundary Loss,-,-,-,-,-,-,pending,-,-,-,-
+DeepLabV3+ (MobileNetV3) — extra baseline,0.7369,0.5834,0.7369,0.592,0.9758,0.6127,n/a,11020594,n/a,8.51,117.52
