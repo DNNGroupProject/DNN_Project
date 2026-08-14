@@ -4,17 +4,30 @@ Reuses the dataset committed under Kalana-Person2/{images,masks} (5,108
 pairs — the same "Forest Segmented"-style dataset the rest of the team
 uses) rather than the Lasana-Person4_Evaluation config paths, which point
 at a `Lasana/dataset/...` folder that isn't present in this checkout.
+
+The shuffle/split below deliberately mirrors Chanupa-Person1/dataset.py's
+`make_splits` bit-for-bit (sorted mask filenames, stdlib `random.shuffle`
+under the shared seed 42, front-slice val/test/train) rather than using
+NumPy's `RandomState.shuffle` + sklearn's `train_test_split` this file used
+previously. Those are a different RNG and a different partitioning
+algorithm — same seed and same split *sizes* do not imply the same held-out
+*images*. Since the U-Net baseline (`unet_baseline_reconciliation.md`) and
+the augmentation ablation were explicitly chosen for being trained/scored
+on the real audited split (3576/766/766 off the 5,108-pair dataset) so
+every baseline is apples-to-apples, this file needs to select that same
+pool, not just a same-sized one, once `segformer_full_scale_colab.ipynb`
+is run at n_train=3576/n_val=766/n_test=766.
 """
 from __future__ import annotations
 
 import os
+import random
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
 import torch
-from sklearn.model_selection import train_test_split
 
 PERSON3_DIR = Path(__file__).resolve().parent.parent
 PHASE1_DIR = PERSON3_DIR.parent
@@ -25,25 +38,33 @@ IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
-def _mask_path_for(image_filename: str) -> Optional[Path]:
-    stem, ext = os.path.splitext(image_filename)
-    candidate_stem = stem.replace("_sat_", "_mask_") if "_sat_" in stem else stem
+def _image_path_for(mask_filename: str) -> Optional[Path]:
+    """Mask -> image filename, matching Chanupa-Person1/dataset.py's
+    `mask_name_to_image_name` exactly ('_mask' -> '_sat' substring replace,
+    not '_mask_' -> '_sat_')."""
+    stem, ext = os.path.splitext(mask_filename)
+    candidate_stem = stem.replace("_mask", "_sat")
     for e in (ext, ".jpg", ".jpeg", ".png"):
-        p = MASK_DIR / f"{candidate_stem}{e}"
+        p = IMG_DIR / f"{candidate_stem}{e}"
         if p.exists():
             return p
     return None
 
 
 def list_pairs(max_samples: Optional[int] = None, seed: int = 42) -> List[Tuple[Path, Path]]:
-    files = sorted(f for f in os.listdir(IMG_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png")))
-    rng = np.random.RandomState(seed)
-    rng.shuffle(files)
+    """Sort *mask* filenames (Chanupa's dataset.py source-of-truth list, not
+    the image list), shuffle with stdlib `random` under `seed`, then take
+    the first `max_samples`. Bit-identical pool selection to dataset.py's
+    make_splits given the same seed and total count, so splits computed
+    from this are comparable to the U-Net baseline's."""
+    files = sorted(f for f in os.listdir(MASK_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png")))
+    random.seed(seed)
+    random.shuffle(files)
     pairs = []
     for f in files:
-        mp = _mask_path_for(f)
-        if mp is not None:
-            pairs.append((IMG_DIR / f, mp))
+        ip = _image_path_for(f)
+        if ip is not None:
+            pairs.append((ip, MASK_DIR / f))
         if max_samples is not None and len(pairs) >= max_samples:
             break
     if not pairs:
@@ -76,14 +97,19 @@ def load_pairs(
 def make_splits(
     n_train: int, n_val: int, n_test: int, seed: int = 42
 ) -> dict:
-    """Stratified-by-shuffle split, disjoint train/val/test, same seed
-    convention (42) the rest of the team uses."""
+    """Disjoint train/val/test split, same seed convention (42) the rest of
+    the team uses -- and, as of this fix, the same *order* Chanupa's
+    dataset.py uses (val = front slice, test = next slice, train =
+    remainder of the shuffled pool), not a separate sklearn
+    `train_test_split` call. At n_train=3576/n_val=766/n_test=766 (the real
+    audited 5,108-pair dataset's 70/15/15 split), this selects the exact
+    same held-out images as the U-Net baseline and augmentation ablation,
+    not just a same-sized split."""
     total = n_train + n_val + n_test
     pairs = list_pairs(max_samples=total, seed=seed)
-    train_pairs, rest = train_test_split(pairs, train_size=n_train, random_state=seed)
-    val_pairs, test_pairs = train_test_split(
-        rest, train_size=n_val, test_size=n_test, random_state=seed
-    )
+    val_pairs = pairs[:n_val]
+    test_pairs = pairs[n_val : n_val + n_test]
+    train_pairs = pairs[n_val + n_test :]
     return {"train": train_pairs, "val": val_pairs, "test": test_pairs}
 
 
