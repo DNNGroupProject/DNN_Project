@@ -219,6 +219,19 @@ on Dice/IoU on a 200-image smoke run, with a strong precision/recall
 imbalance (precision 0.592, recall 0.976) — it over-predicts forest broadly
 rather than delineating boundaries precisely.
 
+**Augmentation ablation (U-Net, full scale).** Separately, a full-scale
+(5,108-image, 20-epoch) augmentation ablation on the U-Net baseline —
+same split/seed/starting weights, toggling only
+`shared/augmentation.py` — finds augmentation does **not** improve
+accuracy under this budget: test Dice 0.8604 (no aug) → 0.8505 (with
+aug), IoU 0.7598 → 0.7454
+(`Phase1/Chanupa-Person1/results/augmentation_ablation.md`). Neither arm
+overfits within 20 epochs — the regime where augmentation is expected to
+help — and this is single-seed, so the supportable claim is
+*"augmentation did not improve the U-Net baseline under our training
+budget (−0.010 Dice)"*, not that augmentation is unhelpful for the task
+generally.
+
 **Caveats (must be resolved before final submission):**
 - 8 epochs / 400 images is a smoke-scale proof of pipeline correctness, not
   a reliable trend — re-run at the full 5,108-image/20-epoch scale

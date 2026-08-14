@@ -391,6 +391,18 @@ Genuine output of the trained checkpoints, not cherry-picked, from an
 \label{fig:attn}
 \end{figure*}
 
+\textbf{Augmentation ablation (U-Net, full scale).} Separately from the
+smoke-scale numbers above, a full-scale (5{,}108-image, 20-epoch)
+augmentation ablation on the U-Net baseline --- same split, seed, and
+starting weights, toggling only the augmentation pipeline --- finds that
+augmentation does not improve accuracy under this training budget: test
+Dice falls from 0.8604 (no augmentation) to 0.8505 (with augmentation),
+IoU from 0.7598 to 0.7454. Neither arm overfits within 20 epochs, the
+regime in which augmentation is expected to pay off, and this is a
+single-seed result, so we read it as \emph{augmentation did not improve
+the U-Net baseline under our training budget}, not as evidence that
+augmentation is unhelpful for this task in general.
+
 \textbf{Limitations of these preliminary numbers.} Eight epochs on 400
 images is a smoke-scale proof that the pipeline is correct end-to-end, not
 a reliable trend; the full 5{,}108-image, 20-epoch run is pending.
