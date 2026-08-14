@@ -162,47 +162,43 @@ downstream can load them. `checkpoints/` is the landing spot. The steps:
    so a straight commit bounces on push. Nothing else in the repo is close:
    every `.pt` under `Phase1/` is 14.9 MB, and the largest checkpoint anywhere
    is 23.6 MB. There is no `.gitattributes`, so no Git LFS either.
-4. **A blanket fp16 cast does not work — measured, don't repeat it.** Halving
-   the whole `state_dict` with `{k: v.half() ...}` gets the file to ~60 MB but
-   costs **10 Dice points**:
+4. **Don't cast the whole `state_dict` to fp16.** The obvious fix costs 10
+   Dice points. Casting only the bulk weight tensors costs nothing. Both
+   measured on the full 766-image test set:
 
-   | | Test Dice | Test IoU |
-   |---|---|---|
-   | fp32 (committed baseline) | 0.8563 | 0.7534 |
-   | blanket fp16 round-trip | **0.7510** | **0.6095** |
+   | | Size | Test Dice | Test IoU |
+   |---|---|---|---|
+   | fp32 original | 124 MB | 0.8563 | 0.7534 |
+   | blanket `{k: v.half()}` | 62 MB | **0.7510** | **0.6095** |
+   | weights-only cast (below) | 60 MB | **0.8563** | **0.7534** |
 
-   That is far past rounding. The likely culprit is the BatchNorm buffers
-   rather than the conv weights: fp16 tops out at 65504 and loses normals
-   below ~6e-5, and BN divides by `sqrt(running_var + eps)`, so one buffer
-   going to `inf` or `0` wrecks that layer while every weight around it stays
-   fine. The U-Net has 18 BN layers. **Untested idea**, if anyone wants to
-   pursue it — cast only the bulk weight tensors and leave the small buffers
-   in fp32 (the conv weights are essentially all 31 M parameters, so the size
-   saving is nearly the same):
+   The damage is in the BatchNorm buffers, not the conv weights. fp16 tops
+   out at 65504 and loses normals below ~6e-5, and BN divides by
+   `sqrt(running_var + eps)` — so one buffer hitting `inf` or `0` wrecks that
+   layer while every weight around it is fine. The U-Net has 18 BN layers.
+   Skipping the small tensors leaves them at full precision, and since the
+   conv weights are essentially all 31 M parameters the file barely grows:
 
    ```python
+   sd = torch.load("/content/drive/MyDrive/unet_baseline.pt", map_location="cpu")
    out = {k: (v.half() if v.is_floating_point() and v.numel() >= 10_000 else v)
           for k, v in sd.items()}
+   torch.save(out, "/content/drive/MyDrive/unet_baseline_best.pt")
    ```
 
-   Verify any such variant the same way before shipping it: load it into a
-   fresh `build_model()`, run the test set, and confirm 0.8563. Do it in
-   Colab — on a laptop CPU that pass takes over half an hour.
-5. **So the checkpoint is not committed yet, and how to ship it is an open
-   decision.** Three options, none of them free:
-   - Git LFS (`git lfs track "*.pt"`) — clean, but everyone has to install LFS.
-   - A Drive link in this README — zero setup, but the weights stop being
-     versioned with the code.
-   - A verified partial-precision cast, per step 4 — smallest change to the
-     current workflow, but needs someone to find and fix what fp16 breaks.
-
-   Person 4 consumes the file, so it's a call to make with them.
-6. Whichever route wins, the file lands at
-   `Phase1/Chanupa-Person1/checkpoints/unet_baseline_best.pt` — the
+   This is what `checkpoints/unet_baseline_best.pt` is. `load_unet()` casts it
+   back to fp32 on the way in, so nothing downstream has to know.
+5. Verify anything you regenerate, in Colab — on a laptop CPU the 766-image
+   test pass takes over half an hour, on a T4 it takes 25 seconds. Load with
+   `load_unet()`, run the test set, confirm **0.8563 / 0.7534**. The
+   blanket-fp16 file looked perfectly healthy until it was measured.
+6. The file lands at `checkpoints/unet_baseline_best.pt` — the
    `<model>_<variant>_{best,last}.pt` naming from
    [CONTRIBUTING.md](../../CONTRIBUTING.md). Keep the untouched fp32 copy on
-   Drive (`unet_baseline_20ep.pt`) either way; it is the only full-precision
-   copy that exists.
+   Drive (`unet_baseline_20ep.pt`); it is the only full-precision
+   copy that exists. 60 MB is over GitHub's 50 MB *warning* threshold but
+   well under the 100 MiB hard limit, so expect a warning on push, not a
+   rejection — no Git LFS needed.
 
 ### Don't wait for it — there's a fixture
 
@@ -240,7 +236,7 @@ What Person 4 needs to write `adapters/unet_torch.py` against the real file:
 | | |
 |---|---|
 | Architecture | `unet_model.UNet(in_channels=3, out_channels=2, features=(64,128,256,512))` |
-| File contents | a plain `state_dict` (fp16 — `.float()` it on load) |
+| File contents | a plain `state_dict`, weight tensors fp16 / BN buffers fp32 — `load_unet()` handles the cast |
 | Input | `1×3×256×256`, ImageNet-normalized, mask thresholded at >127 |
 | Output | 2 logit channels; `argmax(dim=1)` for the forest mask |
 
@@ -253,15 +249,17 @@ What Person 4 needs to write `adapters/unet_torch.py` against the real file:
 
 ## What's still owed
 
-- **The full-scale augmentation ablation.** The harness and the smoke run are
-  done; the 20-epoch, full-dataset, both-arms run needs a GPU. That is the
-  number the paper should quote, not the smoke one above.
-- **The trained checkpoint.** The weights themselves exist (119 MiB on Drive,
-  from the Jul 25 run), so this is no longer "needs a re-train" — it's the
-  open how-to-ship-it decision in step 5 above.
+**The full-scale augmentation ablation**, and nothing else. The harness and the
+smoke run are done; the 20-epoch, full-dataset, both-arms run needs a GPU, and
+that is the number the paper should quote rather than the smoke one above.
 
-Neither of these touches the committed baseline numbers: `augment` defaults to
-off everywhere, and the notebook was not modified.
+It doesn't touch the committed baseline numbers: `augment` defaults to off
+everywhere, and the notebook was not modified.
+
+While confirming the checkpoint, the full test pass was re-run through
+`dataset.py` + `unet_model.py` rather than the notebook and reproduced
+`loss=0.4302 dice=0.8563 iou=0.7534` exactly — so both the committed baseline
+and the extracted modules are verified against each other.
 
 ## Cross-folder edits
 
