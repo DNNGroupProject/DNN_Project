@@ -75,8 +75,10 @@ class ForestSegDataset(Dataset):
         self.augment = augment
         self.aug_config = aug_config
         # One generator for the whole dataset, so a run is reproducible from a
-        # single seed. Assumes num_workers=0: forked workers would each inherit
-        # a copy of this generator and replay the identical stream.
+        # single seed. With num_workers > 0 each worker inherits a copy of it
+        # and would replay the identical stream -- pass seed_worker as the
+        # loader's worker_init_fn to give each one its own.
+        self.seed = seed
         self.rng = np.random.default_rng(seed)
 
         self.mean = IMAGENET_MEAN
@@ -110,6 +112,29 @@ class ForestSegDataset(Dataset):
         mask = torch.from_numpy(mask).long()
 
         return image, mask
+
+
+def worker_rng(seed: int, worker_id: int) -> np.random.Generator:
+    """The augmentation stream for one DataLoader worker.
+
+    Split out from seed_worker so it can be tested without spawning a real
+    loader. Seeding from the pair keeps the run reproducible while making each
+    worker's stream independent.
+    """
+    return np.random.default_rng([seed, worker_id])
+
+
+def seed_worker(worker_id: int) -> None:
+    """DataLoader worker_init_fn: give each worker its own augmentation stream.
+
+    Workers are forked after __init__, so without this they all hold a copy of
+    the same generator and hand out the same sequence of augmentations -- the
+    run still trains and still logs a curve, it just sees far less variety
+    than it reports. Nothing downstream would catch that.
+    """
+    info = torch.utils.data.get_worker_info()
+    if info is not None:
+        info.dataset.rng = worker_rng(info.dataset.seed, worker_id)
 
 
 def set_seed(seed: int) -> None:

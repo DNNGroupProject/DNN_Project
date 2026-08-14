@@ -15,7 +15,11 @@ Run (CPU smoke scale -- a few hundred pairs, narrow U-Net, ~15 min):
 
 Run (full scale, needs a GPU -- this is the number for the paper):
     python augmentation_ablation.py --epochs 20 --features 64,128,256,512 \
-        --subset 0 --batch-size 8 --device cuda
+        --subset 0 --batch-size 8 --device cuda --amp
+
+--amp is roughly 3x faster on a T4 and applies to both arms identically, so
+it moves the wall clock and not the comparison. Without it the full run is
+5-6 hours, which is more than a free Colab session reliably lasts.
 
 Exits 0 on a completed run, 1 if a directory is missing or the split comes
 out empty.
@@ -34,7 +38,13 @@ from torch.utils.data import DataLoader
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dataset import ForestSegDataset, list_mask_files, make_splits, set_seed  # noqa: E402
+from dataset import (  # noqa: E402
+    ForestSegDataset,
+    list_mask_files,
+    make_splits,
+    seed_worker,
+    set_seed,
+)
 from unet_model import build_model, dice_iou_score  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
@@ -46,30 +56,51 @@ SMOKE_EPOCHS = 4
 SMOKE_FEATURES = (16, 32, 64, 128)
 
 
-def run_epoch(model, loader, device, optimizer=None):
-    """One pass over a loader. The notebook's Step 5 loop, unchanged --
-    plain cross-entropy, no scheduler, no AMP, no gradient clipping."""
+def run_epoch(model, loader, device, optimizer=None, scaler=None):
+    """One pass over a loader. The notebook's Step 5 loop -- plain
+    cross-entropy, no scheduler, no gradient clipping.
+
+    scaler: pass a GradScaler to run in mixed precision. On a T4 that is
+    roughly 3x faster, because the fp32 loop never touches the tensor cores.
+    Both arms get the same treatment, so it changes the wall clock, not the
+    comparison. None keeps the loop bit-for-bit as the notebook has it.
+    """
     is_train = optimizer is not None
     model.train() if is_train else model.eval()
+    use_amp = scaler is not None
 
     total_loss, total_dice, total_iou, n_batches = 0.0, 0.0, 0.0, 0
 
     with torch.set_grad_enabled(is_train):
         for images, masks in loader:
-            images, masks = images.to(device), masks.to(device)
+            # non_blocking pairs with pin_memory in the loader: the next
+            # batch copies to the GPU while this one is still computing.
+            images = images.to(device, non_blocking=True)
+            masks = masks.to(device, non_blocking=True)
 
-            logits = model(images)
-            logits = F.interpolate(
-                logits, size=masks.shape[-2:], mode="bilinear", align_corners=False
-            )
-            loss = F.cross_entropy(logits, masks)
+            with torch.autocast(device_type="cuda", enabled=use_amp):
+                logits = model(images)
+                logits = F.interpolate(
+                    logits, size=masks.shape[-2:], mode="bilinear", align_corners=False
+                )
+                loss = F.cross_entropy(logits, masks)
 
             if is_train:
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
+                if use_amp:
+                    # fp16 gradients underflow without scaling; the scaler
+                    # picks the factor itself and skips any step that overflows.
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    loss.backward()
+                    optimizer.step()
 
-            preds = logits.argmax(dim=1).bool()
+            # Metrics in fp32 -- argmax is precision-insensitive, but keeping
+            # the accumulation out of autocast avoids any doubt about whether
+            # the reported Dice is affected by the speedup.
+            preds = logits.float().argmax(dim=1).bool()
             dice, iou = dice_iou_score(preds, masks.bool())
 
             total_loss += loss.item()
@@ -101,14 +132,22 @@ def train_one_arm(name, augment, splits, args, epoch_rows):
     val_ds = ForestSegDataset(val_files, **common)
     test_ds = ForestSegDataset(test_files, **common)
 
-    # num_workers=0: the dataset carries one seeded RNG, and forked workers
-    # would each inherit a copy of it and replay the same augmentations.
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
+    # seed_worker gives each worker its own augmentation stream; without it
+    # forked workers replay the same one. pin_memory only helps on CUDA.
+    loader_args = dict(
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        worker_init_fn=seed_worker if args.num_workers > 0 else None,
+        pin_memory=args.device == "cuda",
+        persistent_workers=args.num_workers > 0,
+    )
+    train_loader = DataLoader(train_ds, shuffle=True, **loader_args)
+    val_loader = DataLoader(val_ds, shuffle=False, **loader_args)
+    test_loader = DataLoader(test_ds, shuffle=False, **loader_args)
 
     model = build_model(device=args.device, features=args.features)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    scaler = torch.amp.GradScaler("cuda") if args.amp else None
 
     best_val_dice = 0.0
     best_state = None
@@ -116,8 +155,8 @@ def train_one_arm(name, augment, splits, args, epoch_rows):
 
     print(f"\n=== arm: {name} (augment={augment}) ===")
     for epoch in range(1, args.epochs + 1):
-        train_loss, train_dice, train_iou = run_epoch(model, train_loader, args.device, optimizer)
-        val_loss, val_dice, val_iou = run_epoch(model, val_loader, args.device)
+        train_loss, train_dice, train_iou = run_epoch(model, train_loader, args.device, optimizer, scaler)
+        val_loss, val_dice, val_iou = run_epoch(model, val_loader, args.device, scaler=scaler)
 
         epoch_rows.append({
             "arm": name, "epoch": epoch,
@@ -137,7 +176,7 @@ def train_one_arm(name, augment, splits, args, epoch_rows):
 
     if best_state is not None:
         model.load_state_dict(best_state)
-    test_loss, test_dice, test_iou = run_epoch(model, test_loader, args.device)
+    test_loss, test_dice, test_iou = run_epoch(model, test_loader, args.device, scaler=scaler)
     minutes = (time.time() - started) / 60
 
     print(f"test: loss={test_loss:.4f} dice={test_dice:.4f} iou={test_iou:.4f}  ({minutes:.1f} min)")
@@ -241,6 +280,14 @@ def main(argv=None) -> int:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "--num-workers", type=int, default=2,
+        help="DataLoader workers. >0 needs seed_worker, which is wired up below.",
+    )
+    parser.add_argument(
+        "--amp", action="store_true",
+        help="Mixed precision. ~3x faster on a T4; applied to both arms equally.",
+    )
     parser.add_argument("--out-dir", type=Path, default=HERE / "results")
     args = parser.parse_args(argv)
 

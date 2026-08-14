@@ -213,6 +213,26 @@ def test_mismatched_shapes_are_rejected():
         pass
 
 
+def test_dataloader_workers_get_independent_streams():
+    # Forked workers inherit a copy of the dataset's generator, so without
+    # per-worker seeding they all replay the same augmentations -- the run
+    # trains fine and logs a normal curve while seeing a fraction of the
+    # variety it claims. This is the guard against that.
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from dataset import worker_rng
+
+    streams = [worker_rng(42, wid).random(20) for wid in range(4)]
+    for a in range(len(streams)):
+        for b in range(a + 1, len(streams)):
+            assert not np.array_equal(streams[a], streams[b]), f"workers {a},{b} match"
+
+    # ...but each worker is still reproducible from the same (seed, id).
+    assert np.array_equal(worker_rng(42, 1).random(20), worker_rng(42, 1).random(20))
+
+
 def test_output_is_contiguous():
     # np.fliplr/rot90 return negative-stride views and torch.from_numpy
     # refuses those -- this is the test that catches a missing copy.
@@ -241,6 +261,7 @@ ALL_TESTS = [
     test_no_augment_config_is_the_identity,
     test_inputs_are_not_modified_in_place,
     test_mismatched_shapes_are_rejected,
+    test_dataloader_workers_get_independent_streams,
     test_output_is_contiguous,
 ]
 
