@@ -290,3 +290,10 @@ the repo meant to be imported by more than one person):
 - **`shared/README.md`** — added a section describing it, and retitled the file
   from "Shared experiment tracking" to "Shared utilities" since it now covers
   two things. The W&B content is unchanged.
+
+And one in Person 5's folder:
+
+- **`Phase1/Dhinanjaya-Person5/unet_baseline_reconciliation.md`** — that doc
+  asks me for the checkpoint and leaves a checkbox for it. Ticked it and added
+  a "Chanupa's reply" section under it: where the file is, how to load it, and
+  the fp16 trap found on the way. Nothing existing was reworded.

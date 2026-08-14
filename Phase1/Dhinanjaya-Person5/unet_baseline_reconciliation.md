@@ -39,7 +39,22 @@ The 1.95M / 0.8492 numbers have already propagated into:
 
 ## What's needed — Chanupa
 
-- [ ] Export and commit the trained PyTorch U-Net weights (`.pt`/`.pth`) from the Colab run into `Phase1/Chanupa-Person1/checkpoints/` (or wherever fits the folder convention). Right now the trained model only lives in the Colab session/Drive — nothing downstream can load it without this.
+- [x] Export and commit the trained PyTorch U-Net weights (`.pt`/`.pth`) from the Colab run into `Phase1/Chanupa-Person1/checkpoints/` (or wherever fits the folder convention). Right now the trained model only lives in the Colab session/Drive — nothing downstream can load it without this.
+
+### Done — Chanupa's reply
+
+**The checkpoint is in:** `Phase1/Chanupa-Person1/checkpoints/unet_baseline_best.pt`, 59 MB. Load it with `unet_model.load_unet(path)` — it infers the architecture width from the checkpoint and handles the dtype, so the adapter is a thin wrapper over one call.
+
+Two things had to happen first. The architecture only existed inside a notebook cell, so even with the `.pt` in hand there was nothing to load a `state_dict` into — it's now `Phase1/Chanupa-Person1/unet_model.py`, a verbatim lift that still reads 31,037,698 params. `dataset.py` is the matching lift of the loader and split.
+
+**The size problem, and a trap in it.** The fp32 file is 124 MB, over GitHub's 100 MiB hard limit. The obvious fix — casting the whole `state_dict` to fp16 — produces a healthy-looking 62 MB file that **silently drops test Dice 0.8563 → 0.7510 and IoU 0.7534 → 0.6095**. Nothing errors. The damage is in the BatchNorm buffers, not the conv weights: fp16 caps at 65504 and loses normals below ~6e-5, and BN divides by `sqrt(running_var + eps)`. Casting only tensors with ≥10,000 elements leaves the 36 buffers at full precision, lands at 59 MB, and measures **0.8563 / 0.7534 exactly**. Worth knowing if the SegFormer checkpoints ever need shrinking. Full table in `Phase1/Chanupa-Person1/README.md`.
+
+**Two confirmations that came out of verifying it**, both relevant beyond this item:
+
+- **The committed baseline reproduces exactly.** Re-running the 766-image test set through `dataset.py` + `unet_model.py` (not the notebook) gives `loss=0.4302 dice=0.8563 iou=0.7534`, matching `test_metrics.txt` to four decimals, on a 3576/766/766 split. The number going into the paper is solid.
+- **Measure any checkpoint you regenerate.** 25 seconds on a T4. The blanket-fp16 file passed every structural check.
+
+There's also `checkpoints/unet_fixture_random.pt` (0.5 MB, untrained, deliberately a different width) as a fast fixture for loader tests — it fails loudly if anything mistakes it for the baseline.
 
 ## What's needed — Lasana
 
@@ -50,3 +65,11 @@ The 1.95M / 0.8492 numbers have already propagated into:
 ## After both are done
 
 Ping me (Dhinanjaya) once the new `baseline_comparison.md` is regenerated — I'll update the paper draft's U-Net row and the efficiency-comparison prose to match, and re-verify the ACM PDF still compiles within the page limit.
+
+---
+
+## Status
+
+Chanupa's half is done; Lasana's three items are unblocked and outstanding. Nothing is waiting on Chanupa.
+
+One thing for the paper, Dhinanjaya, separate from this reconciliation: the augmentation ablation is now run at full scale (`Phase1/Chanupa-Person1/results/augmentation_ablation.md`). Augmentation **does not help** the U-Net baseline — test Dice 0.8604 → 0.8505 with it on. Supportable claim: *"augmentation did not improve the U-Net baseline under our training budget (−0.010 Dice)."* Not supportable: that augmentation doesn't help this task — neither arm ever overfits in 20 epochs, which is the regime where it would pay, and it's a single seed. The caveats are written up in that folder's README.
