@@ -9,7 +9,7 @@ measured against. Proposal §6.1.2:
 | 1–2 | Shared augmentation pipeline | Done — [`shared/augmentation.py`](../../shared/augmentation.py) |
 | 1–2 | Train the U-Net baseline to a working Dice/IoU | Done — results below |
 | 3–4 | Qualitative dataset/result figures for the paper | Done — `prediction_grid.png`, `training_curves.png` |
-| 3–4 | Augmentation ablation (with vs. without) | Harness done + smoke run; full-scale run still owed — see below |
+| 3–4 | Augmentation ablation (with vs. without) | Done — full-scale run, augmentation costs 0.010 Dice; see below |
 | 3–4 | Support debugging as needed | Ongoing — continues in [`Phase2/Chanupa-Person1/`](../../Phase2/Chanupa-Person1/) |
 
 ## Layout
@@ -115,35 +115,45 @@ Same split, same seed, same starting weights, same loop — the only thing that
 changes is whether `shared/augmentation.py` is applied to the training set.
 Val and test are never augmented.
 
-**Smoke scale only so far** — 600 pairs, 8 epochs, a narrowed U-Net
-(16/32/64/128), on CPU. Full table in
-[`results/augmentation_ablation.md`](results/augmentation_ablation.md):
+Full scale: 5,108 pairs, train/val/test = 3576/766/766, 20 epochs, batch 8,
+lr 1e-3, 256×256, seed 42, mixed precision, on a Colab T4. Table and per-epoch
+log in [`results/`](results/):
 
 | Arm | Best val Dice | Test Dice | Test IoU | Test loss |
 |---|---|---|---|---|
-| No augmentation | 0.8474 | 0.8091 | 0.6972 | 0.4854 |
-| With augmentation | 0.8246 | 0.8008 | 0.6855 | 0.5146 |
-| Delta (aug − none) | −0.0228 | −0.0083 | −0.0117 | +0.0292 |
+| No augmentation | 0.8670 | 0.8604 | 0.7598 | 0.4172 |
+| With augmentation | 0.8565 | 0.8505 | 0.7454 | 0.4366 |
+| **Delta (aug − none)** | **−0.0104** | **−0.0100** | **−0.0144** | **+0.0194** |
 
-**Augmentation came out worse here, and that is not yet an argument against
-it.** The augmented arm is also behind on *training* Dice (0.8067 vs 0.8156)
-and training loss (0.5172 vs 0.4977) — it is fitting the training set less
-well, not generalising worse from an equal fit. That is the signature of a run
-that hasn't converged, which is what you'd expect: augmentation is a
-regulariser, it pays off by holding back overfitting, and at 8 epochs on 420
-images there is no overfitting to hold back. The no-augmentation arm's val Dice
-was still climbing at epoch 7. All the extra input variance can do at this
-length is slow it down.
+**Augmentation did not help. It cost about 1 Dice point.**
 
-What the run does establish: the harness is correct and reproducible. Both arms
-start from identical weights, the deltas are non-zero and stable across re-runs
-at the same seed, and the tests confirm the transforms keep the mask aligned
-and binary.
+Two things make that credible rather than a broken run. First, the
+no-augmentation arm lands at test Dice 0.8604 against the committed baseline's
+0.8563 — same recipe, so it reproduces to within 0.004, which is inside the
+run-to-run variation already documented above. Second, both arms trained from
+byte-identical starting weights on the same split, so the delta has nowhere
+else to come from.
 
-**The number for the paper is the full-scale run** — 5,108 pairs, 20 epochs,
-the real 64/128/256/512 U-Net, on a GPU (the command is under "Reproducing").
-Until that exists, don't quote the table above as the augmentation result, and
-treat it as single-seed either way.
+**Why it didn't help, from `augmentation_ablation_log.csv`:** neither arm ever
+overfits. Over all 20 epochs val Dice sits *above* train Dice in both arms, and
+both curves are still climbing at epoch 20 (no-aug train Dice 0.7906 → 0.8486,
+val 0.8224 → 0.8670). There is no train/val divergence to suppress. The
+augmented arm is also behind on *training* fit — final-5-epoch mean train Dice
+0.8342 vs 0.8456, train loss 0.4570 vs 0.4236 — so it is not trading training
+accuracy for generalisation, it is simply further from convergence. Under a
+20-epoch budget this U-Net is compute-limited, not data-limited, and
+augmentation spends capacity the model doesn't have spare.
+
+**How to state it in the paper:** "augmentation did not improve the U-Net
+baseline under our training budget (−0.010 Dice)" is supported. "Augmentation
+does not help forest segmentation" is not — a longer schedule, where the
+no-augmentation arm actually starts overfitting, is the condition under which
+augmentation would be expected to pay, and this run never reaches it. Also
+**single seed**, so treat ~0.010 as at the edge of what one run can resolve;
+the baseline's own val Dice swings by more than that between epochs.
+
+Reproduce with the full-scale command under "Reproducing" (add `--amp
+--num-workers 2`, as this run used). ~1.5 h on a T4.
 
 ## Getting the weights out of Colab
 
@@ -249,17 +259,23 @@ What Person 4 needs to write `adapters/unet_torch.py` against the real file:
 
 ## What's still owed
 
-**The full-scale augmentation ablation**, and nothing else. The harness and the
-smoke run are done; the 20-epoch, full-dataset, both-arms run needs a GPU, and
-that is the number the paper should quote rather than the smoke one above.
+Nothing from Phase 1 §6.1.2 — all six rows above are done.
 
-It doesn't touch the committed baseline numbers: `augment` defaults to off
-everywhere, and the notebook was not modified.
+Two things worth someone's time later, neither blocking the short paper:
 
-While confirming the checkpoint, the full test pass was re-run through
-`dataset.py` + `unet_model.py` rather than the notebook and reproduced
-`loss=0.4302 dice=0.8563 iou=0.7534` exactly — so both the committed baseline
-and the extracted modules are verified against each other.
+- **A second and third seed for the ablation.** The −0.010 Dice delta is one
+  run, and epoch-to-epoch val Dice swings by more than that. Person 4 owns
+  multi-seed mean±std in Phase 2 (§6.2), and this table is a natural fit.
+- **A longer-schedule rerun.** Neither arm overfits in 20 epochs, which is
+  exactly the regime where augmentation can't help. 50+ epochs would test the
+  interesting case. Cheap to do — the runner takes `--epochs`.
+
+None of this touched the committed baseline numbers: `augment` defaults to off
+everywhere, and the notebook was not modified. Two independent confirmations
+came out of the work — the full test pass re-run through `dataset.py` +
+`unet_model.py` rather than the notebook reproduced `loss=0.4302 dice=0.8563
+iou=0.7534` exactly, and the ablation's no-augmentation arm independently
+landed at 0.8604 on the same recipe.
 
 ## Cross-folder edits
 

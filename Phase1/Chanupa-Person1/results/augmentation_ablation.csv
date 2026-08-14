@@ -1,4 +1,4 @@
 arm,best_val_dice,test_dice,test_iou,test_loss
-No augmentation,0.8474,0.8091,0.6972,0.4854
-With augmentation,0.8246,0.8008,0.6855,0.5146
-Delta (aug - none),-0.0228,-0.0083,-0.0117,+0.0292
+No augmentation,0.8670,0.8604,0.7598,0.4172
+With augmentation,0.8565,0.8505,0.7454,0.4366
+Delta (aug - none),-0.0104,-0.0100,-0.0144,+0.0194
