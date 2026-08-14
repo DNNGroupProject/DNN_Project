@@ -80,13 +80,27 @@ model in the comparison table shares one true test set, or (b) explicitly
 noting the discrepancy in the paper if left as-is. Recommend (a) — it's a
 two-number edit in cells 7 and 9, before any GPU time is spent.
 
-## Owner
+## Owner: Kalana (assigned 2026-08-15)
 
-Not explicitly assigned in the proposal, but this is Kalana/Dinura's
-(Persons 2/3) code and checkpoints — whoever has Colab GPU time available.
+Not explicitly assigned in the proposal — Phase 2 (§6.2.2) only gives
+Kalana a Weeks 5–6 support task (integrating the attention-extraction
+pipeline with Person 3's loss implementation) and nothing after, leaving
+him with real open bandwidth from Week 7 onward. Assigning this to him
+rather than leaving it as "whoever has GPU time": he already owns the
+SegFormer pipeline as Transformer Lead and has already built and run the
+closest equivalent full-scale job himself
+(`Kalana-Person2/segformer_baseline_scratch_colab.ipynb`) — same GPU/Colab
+setup, same `SEED=42`/`VAL_SPLIT`/`TEST_SPLIT`/shuffle-then-front-slice
+split algorithm this notebook now also uses (see the split fix above).
+Least new context to load of anyone on the team.
+
 Needs an actual GPU runtime (~20 epochs × 2 variants at batch 16 — budget
 real wall-clock time, the 8-epoch/400-image CPU smoke run alone took
-669.5s per variant per `train_summary_vanilla.json`).
+669.5s per variant per `train_summary_vanilla.json`). Dinura no longer
+needs to run this themselves — see `split_fix_notice_dinura.md`, updated
+to reflect the handoff — but the notebook and checkpoints still live under
+`Dinura-Person3/`, so Kalana will need read/write access there (or Drive
+copies) to run it and land results back in the right place.
 
 ## After this is done
 

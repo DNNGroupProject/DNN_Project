@@ -52,20 +52,27 @@ n_train=3576/n_val=766/n_test=766. Train, val, and test lists came back
 being made here — not just "same sizes," the literal same 766 images end
 up in each split.
 
-## What I could *not* verify — please sanity-check on your first real run
+## What I could *not* verify
 
 This machine's conda `ml` env is missing both `cv2` and `transformers`
 (matches an earlier note about that env), so I couldn't import
 `attention_consistency/data.py` end-to-end through `load_pairs`/
 `to_model_input` — those two functions are untouched by this fix, so risk
-should be low, but I'd feel better if the first real Colab run printed
-`len(train)/len(val)/len(test)` (should be exactly 3576/766/766) and
-confirmed the three sets don't overlap before spending 20 epochs × 2
-variants of GPU time on it.
+should be low, but whoever runs the notebook should confirm the first real
+run prints `len(train)/len(val)/len(test)` as exactly 3576/766/766 and that
+the three sets don't overlap, before spending 20 epochs × 2 variants of GPU
+time on it.
 
-## Context
+## Context — Kalana is picking up the actual run
 
-Full task (the notebook itself has never been executed — see
-`full_scale_segformer_todo.md`) is still open and unassigned. This fix
-just makes sure that whenever it does run, the numbers land in a table
-that's actually apples-to-apples with the rest of the paper.
+You don't need to run `segformer_full_scale_colab.ipynb` yourself. Kalana
+has open Phase 2 bandwidth (his proposal-assigned role only covers Weeks
+5–6) and already has working full-scale Colab infrastructure for this
+exact pipeline (`Kalana-Person2/segformer_baseline_scratch_colab.ipynb`),
+so he's taking the full-scale run — see `full_scale_segformer_todo.md`'s
+Owner section. The notebook and checkpoints still live under
+`Dinura-Person3/`, so he'll need access there (or Drive copies) to run it
+and land results back in the right place — flag if that's awkward and we
+can adjust. This note stays here mainly so you know why `data.py` changed
+under you and that the fix is verified, in case anything else in your
+folder still imports it.
