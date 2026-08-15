@@ -1,14 +1,14 @@
 {
   "model": "U-Net (CNN baseline)",
-  "dice": 0.8492,
-  "iou": 0.7379,
-  "f1": 0.8492,
-  "precision": 0.7943,
-  "recall": 0.9122,
-  "pixel_acc": 0.8111,
+  "dice": 0.8615,
+  "iou": 0.7568,
+  "f1": 0.8615,
+  "precision": 0.8009,
+  "recall": 0.9321,
+  "pixel_acc": 0.8174,
   "aamo": "n/a",
-  "params": 1951105,
-  "gflops": "n/a",
-  "fps": 3.48,
-  "ms_per_image": 287.7
+  "params": 31037698,
+  "gflops": 109.48,
+  "fps": 1.47,
+  "ms_per_image": 680.55
 }

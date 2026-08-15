@@ -28,7 +28,11 @@ from metrics import ConfusionCounts, binarize, format_metrics, metrics_from_coun
 
 def get_adapter(model_name: str, checkpoint: Optional[str] = None):
     name = model_name.lower().strip()
-    if name in ("unet", "u-net", "lasana"):
+    if name in ("unet", "u-net", "unet_torch", "lasana"):
+        from adapters.unet_torch import UnetTorchAdapter
+
+        ad = UnetTorchAdapter()
+    elif name in ("unet_keras", "unet-keras", "keras"):
         from adapters.unet_keras import UnetKerasAdapter
 
         ad = UnetKerasAdapter()
@@ -53,7 +57,8 @@ def get_adapter(model_name: str, checkpoint: Optional[str] = None):
     else:
         raise SystemExit(
             f"Unknown --model {model_name}. "
-            "Use: unet | segformer | segformer-att | segformer-boundary | deeplab"
+            "Use: unet | unet_torch | unet_keras | segformer | segformer-att | "
+            "segformer-boundary | deeplab"
         )
     ad.load(checkpoint)
     return ad
@@ -240,7 +245,7 @@ def parse_args():
     p.add_argument(
         "--model",
         default="unet",
-        help="unet | segformer | segformer-att | segformer-boundary",
+        help="unet | unet_torch | unet_keras | segformer | segformer-att | segformer-boundary | deeplab",
     )
     p.add_argument("--checkpoint", default=None, help="Override checkpoint path")
     p.add_argument("--split", default="test", choices=["train", "val", "test"])
@@ -251,7 +256,7 @@ def parse_args():
         "--max-samples",
         type=int,
         default=None,
-        help="Cap paired images before split (default: 1200 to match Lasana CPU train)",
+        help="Cap paired images before split. Omit for full Chanupa 5108-pair split.",
     )
     p.add_argument(
         "--attention-npy",
