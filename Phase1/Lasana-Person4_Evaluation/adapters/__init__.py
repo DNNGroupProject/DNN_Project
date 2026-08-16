@@ -6,6 +6,7 @@ from adapters.deeplabv3 import DeepLabV3Adapter
 
 __all__ = [
     "UnetKerasAdapter",
+    "UnetTorchAdapter",
     "SegFormerStubAdapter",
     "SegFormerNotReadyError",
     "SegFormerAdapter",
@@ -14,9 +15,12 @@ __all__ = [
 
 
 def __getattr__(name: str):
-    # Lazy: transformers / Dinura attention_consistency only needed for SegFormer
     if name == "SegFormerAdapter":
         from adapters.segformer import SegFormerAdapter
 
         return SegFormerAdapter
+    if name == "UnetTorchAdapter":
+        from adapters.unet_torch import UnetTorchAdapter
+
+        return UnetTorchAdapter
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

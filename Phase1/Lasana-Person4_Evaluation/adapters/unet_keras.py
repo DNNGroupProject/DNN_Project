@@ -13,11 +13,11 @@ from efficiency import count_keras_params, gflops_keras, measure_fps
 
 
 class UnetKerasAdapter(ModelAdapter):
-    name = "U-Net (CNN baseline)"
+    name = "U-Net (Keras, superseded)"
 
     def __init__(self):
         self.model = None
-        self.checkpoint = str(config.UNET_CKPT)
+        self.checkpoint = str(config.UNET_KERAS_CKPT)
 
     def load(self, checkpoint: Optional[str] = None) -> None:
         import tensorflow as tf
@@ -26,7 +26,7 @@ class UnetKerasAdapter(ModelAdapter):
         if not path or not os.path.exists(path):
             raise FileNotFoundError(
                 f"U-Net checkpoint not found: {path}\n"
-                "Train Lasana first or pass --checkpoint."
+                "Old Keras path. Prefer --model unet (PyTorch). Pass --checkpoint to override."
             )
         # Custom objects may be needed if model used named losses; load with compile=False
         self.model = tf.keras.models.load_model(path, compile=False)

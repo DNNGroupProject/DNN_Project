@@ -19,8 +19,10 @@ else:
 IMG_DIR = DATA_DIR / "images"
 MASK_DIR = DATA_DIR / "masks"
 
-# Existing U-Net checkpoint (Person 1 / Lasana)
-UNET_CKPT = PROJECT / "Lasana" / "checkpoints" / "lasana_unet_best.keras"
+# Official CNN baseline: Chanupa's PyTorch U-Net (paper row).
+UNET_CKPT = PHASE1 / "Chanupa-Person1" / "checkpoints" / "unet_baseline_best.pt"
+# Superseded Keras checkpoint (evaluate.py --model unet_keras only)
+UNET_KERAS_CKPT = PROJECT / "Lasana" / "checkpoints" / "lasana_unet_best.keras"
 
 # Person 2 / 3 SegFormer checkpoints (copied into this folder)
 SEGFORMER_CKPT = ROOT / "checkpoints" / "segformer_b0_vanilla.pt"

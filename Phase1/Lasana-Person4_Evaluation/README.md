@@ -37,6 +37,7 @@ Phase1/Lasana-Person4_Evaluation/
     __init__.py
     base.py
     unet_keras.py
+    unet_torch.py             # official CNN baseline (Chanupa .pt)
     segformer.py
     segformer_stub.py
     deeplab_model.py
@@ -55,11 +56,17 @@ Phase1/Lasana-Person4_Evaluation/
 ```bash
 cd Phase1/Lasana-Person4_Evaluation
 
-# Week 1–3: evaluate existing Lasana U-Net
+# Official U-Net baseline = Chanupa's PyTorch checkpoint (Dice 0.8563 / IoU 0.7534)
 python evaluate.py --model unet
+
+# Adapter fixture tests (no 59 MB weights)
+python tests/test_unet_torch.py
 
 # Optional: limit samples for a fast CPU smoke run
 python evaluate.py --model unet --max-samples 200
+
+# Old Keras 1.95M checkpoint (superseded)
+python evaluate.py --model unet_keras
 
 # AAMO unit check (no SegFormer needed)
 python aamo.py
