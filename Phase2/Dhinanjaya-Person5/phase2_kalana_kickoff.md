@@ -1,5 +1,41 @@
 # Phase 2 kickoff — for Kalana (Person 2), 2026-08-15
 
+## Update 2026-08-16 — training is running on Colab
+
+Scaffolding merged into `main` (`Phase2/Kalana-Person2/`: `paths.py`,
+`train_full_scale.py`, `eval_full_scale.py`,
+`generate_full_scale_figures.py`, the Colab notebook, and a split-identity
+preflight test) and the Colab run itself is now in progress. The "one
+practical wrinkle" section below is superseded — you built your own
+`Phase2/Kalana-Person2/` output dir and teammate-path helpers instead of
+writing into `Dinura-Person3/`, which resolves the access question it
+raised.
+
+**Checklist for when training finishes:**
+
+- [ ] Let both variants (vanilla, attention) finish all 20 epochs each.
+- [ ] `python eval_full_scale.py --variant both` → `results/eval_{vanilla,att}.json`, `results/baseline_comparison.{csv,md}`.
+- [ ] `python generate_full_scale_figures.py --n 3` → attention-drift figures.
+- [ ] Copy the JSON/markdown/figures back into git under
+      `Phase2/Kalana-Person2/results/`. Leave the `.pt` checkpoints on
+      Drive — they'll blow GitHub's 100 MiB limit, same issue Chanupa hit
+      on the U-Net checkpoint. If a checkpoint genuinely needs to be
+      committed, his selective-fp16 fix (skip BatchNorm-sized buffers) is
+      in `Phase1/Chanupa-Person1/README.md` — don't do a blanket fp16
+      cast, it silently corrupts BatchNorm buffers.
+- [ ] Ping Dhinanjaya once results land — abstract, results table,
+      Figure 2, and the smoke-scale caveat paragraphs are his follow-up
+      (full list in `../../Phase1/Dhinanjaya-Person5/full_scale_segformer_todo.md`'s
+      "After this is done" section).
+
+One thing to flag to Dhinanjaya alongside the results: your run uses one
+fixed hyperparameter set (λ2=0.3, σ=8, MSE, `train_full_scale.py`'s
+defaults). Dinura is separately running a λ2-sweep for their own Phase 2
+task (`phase2_dinura_kickoff.md`) — if their tuned config beats yours,
+the paper's "SegFormer-B0 + Attention Consistency Loss" row may end up
+citing their checkpoint instead of (or alongside) this one. Not a
+blocker, just don't be surprised if the row's provenance shifts later.
+
 ## What the proposal actually assigns you
 
 Section 6.2.2's Phase 2 work-distribution table gives Person 2 —
