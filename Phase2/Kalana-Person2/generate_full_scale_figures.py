@@ -14,15 +14,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from paths import (
-    CKPT_DIR,
-    DATA_IMG_DIR,
-    DATA_MASK_DIR,
-    RESULTS_DIR,
-    add_teammate_paths,
-    apply_data_dirs,
-    ensure_output_dirs,
-)
+from paths import add_teammate_paths, apply_data_dirs, ensure_output_dirs
+import paths
 
 add_teammate_paths()
 apply_data_dirs()
@@ -34,7 +27,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def load_checkpoint(variant: str) -> torch.nn.Module:
-    ckpt_path = CKPT_DIR / f"segformer_b0_{variant}_best.pt"
+    ckpt_path = paths.CKPT_DIR / f"segformer_b0_{variant}_best.pt"
     if not ckpt_path.exists():
         raise FileNotFoundError(
             f"{ckpt_path} not found — run train_full_scale.py --variant {variant} first."
@@ -65,7 +58,7 @@ def main():
     p.add_argument("--img-dir", default=None)
     p.add_argument("--mask-dir", default=None)
     args = p.parse_args()
-    apply_data_dirs(args.img_dir or DATA_IMG_DIR, args.mask_dir or DATA_MASK_DIR)
+    apply_data_dirs(args.img_dir or paths.DATA_IMG_DIR, args.mask_dir or paths.DATA_MASK_DIR)
 
     vanilla = load_checkpoint("vanilla")
     att = load_checkpoint("att")
@@ -74,7 +67,7 @@ def main():
     images, masks = load_pairs(pairs)
 
     ensure_output_dirs()
-    out_dir = RESULTS_DIR / "attention_drift_figures"
+    out_dir = paths.RESULTS_DIR / "attention_drift_figures"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for i in range(len(images)):

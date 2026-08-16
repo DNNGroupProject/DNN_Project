@@ -42,13 +42,14 @@ not changed here.
 ## Layout
 
 ```
-paths.py                         Repo / teammate / output path helpers
+paths.py                         Repo or unzipped-bundle path helpers
 train_full_scale.py              Person 3's smoke trainer, GPU + this folder's dirs
 eval_full_scale.py               Person 4 metrics; writes only this folder's results/
 generate_full_scale_figures.py   Attention-drift figures → results/attention_drift_figures/
-segformer_full_scale_colab.ipynb Colab GPU run (mount Drive, train, eval, figures)
+segformer_full_scale_colab.ipynb Colab GPU run (unzip Drive zip, train, eval, figures)
+make_colab_zip.py                Builds segformer_full_scale.zip (code + dataset only)
 tests/test_split_identity.py     Pre-flight: 3576/766/766 matches Chanupa's U-Net split
-checkpoints/                     Full-scale weights (Drive / git-lfs; do not commit .pt)
+checkpoints/                     Full-scale weights (Drive; do not commit .pt)
 results/                         Train logs, eval JSON, comparison table, figures
 ```
 
@@ -63,17 +64,23 @@ python tests/test_split_identity.py
 No GPU, no `transformers`. Uses the committed mask filenames when the dataset
 is present; otherwise a synthetic filename list (same algorithm).
 
-Full-scale GPU (the paper run) — Colab, Runtime → GPU:
+Full-scale GPU (the paper run) — Colab, Runtime → GPU. **Do not upload the
+whole repo.**
 
-1. Upload the repo (or at least `Phase1/Dinura-Person3/`,
-   `Phase1/Lasana-Person4_Evaluation/`, `Phase1/Kalana-Person2/{images,masks}`,
-   and this folder) to Drive, e.g. `MyDrive/DNN-Project/`.
-2. Open `segformer_full_scale_colab.ipynb`, set `DRIVE_BASE` if the Drive
-   layout differs, run all cells.
-3. Results write to this folder's `results/` and `checkpoints/` on Drive.
-   Copy the JSON / markdown / figures back into git; leave `.pt` files on
+```bash
+python make_colab_zip.py    # writes segformer_full_scale.zip (~170 MB)
+```
+
+1. Upload `segformer_full_scale.zip` to Drive as `MyDrive/segformer_full_scale.zip`.
+2. Open `segformer_full_scale_colab.ipynb` in Colab (GPU runtime) and Run all.
+   It unzips to `/content/segformer_full_scale` and writes checkpoints/results
+   to `MyDrive/segformer_full_scale_outputs`.
+3. Copy the JSON / markdown / figures back into git; leave `.pt` files on
    Drive (they will blow GitHub's 100 MiB limit — same issue Chanupa hit on
    the U-Net checkpoint).
+
+The zip is gitignored (too big for GitHub). Rebuild it any time with
+`python make_colab_zip.py`.
 
 Equivalent local commands once a GPU and `transformers` exist, still from
 this folder:

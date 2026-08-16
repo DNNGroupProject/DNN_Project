@@ -24,22 +24,19 @@ import torch.nn.functional as F
 from paths import (
     ATT_MODE,
     BATCH_SIZE,
-    CKPT_DIR,
-    DATA_IMG_DIR,
-    DATA_MASK_DIR,
     EPOCHS,
     LAMBDA2,
     LR,
     N_TEST,
     N_TRAIN,
     N_VAL,
-    RESULTS_DIR,
     SEED,
     SIGMA,
     add_teammate_paths,
     apply_data_dirs,
     ensure_output_dirs,
 )
+import paths
 
 add_teammate_paths()
 apply_data_dirs()
@@ -153,7 +150,7 @@ def train_variant(variant: str, args) -> None:
     att_loss_fn = AttentionConsistencyLoss(mode=args.att_mode, sigma=args.sigma)
 
     ensure_output_dirs()
-    log_path = RESULTS_DIR / f"training_log_{variant}.csv"
+    log_path = paths.RESULTS_DIR / f"training_log_{variant}.csv"
     fieldnames = ["epoch", "train_loss", "train_dice", "train_iou", "val_loss", "val_dice", "val_iou"]
     if variant == "att":
         fieldnames += ["train_l_att", "val_l_att"]
@@ -211,7 +208,7 @@ def train_variant(variant: str, args) -> None:
                     "val_dice": val_dice,
                     "variant": variant,
                 },
-                CKPT_DIR / f"segformer_b0_{variant}_best.pt",
+                paths.CKPT_DIR / f"segformer_b0_{variant}_best.pt",
             )
 
     torch.save(
@@ -221,7 +218,7 @@ def train_variant(variant: str, args) -> None:
             "val_dice": val_dice,
             "variant": variant,
         },
-        CKPT_DIR / f"segformer_b0_{variant}_last.pt",
+        paths.CKPT_DIR / f"segformer_b0_{variant}_last.pt",
     )
 
     with open(log_path, "w", newline="", encoding="utf-8") as f:
@@ -243,10 +240,10 @@ def train_variant(variant: str, args) -> None:
         "final_val_iou": val_iou,
         "wall_clock_s": round(time.time() - t_start, 1),
         "device": str(DEVICE),
-        "img_dir": str(DATA_IMG_DIR if not hasattr(args, "img_dir") else args.img_dir),
-        "output_dir": str(RESULTS_DIR),
+        "img_dir": str(paths.DATA_IMG_DIR if not hasattr(args, "img_dir") else args.img_dir),
+        "output_dir": str(paths.RESULTS_DIR),
     }
-    (RESULTS_DIR / f"train_summary_{variant}.json").write_text(
+    (paths.RESULTS_DIR / f"train_summary_{variant}.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
     )
     print(f"Wrote {log_path}")
@@ -267,14 +264,14 @@ def parse_args():
     p.add_argument("--sigma", type=float, default=SIGMA)
     p.add_argument("--att-mode", default=ATT_MODE, choices=["mse", "kl"])
     p.add_argument("--seed", type=int, default=SEED)
-    p.add_argument("--img-dir", type=Path, default=DATA_IMG_DIR)
-    p.add_argument("--mask-dir", type=Path, default=DATA_MASK_DIR)
+    p.add_argument("--img-dir", type=Path, default=None)
+    p.add_argument("--mask-dir", type=Path, default=None)
     return p.parse_args()
 
 
 def main():
     args = parse_args()
-    apply_data_dirs(args.img_dir, args.mask_dir)
+    apply_data_dirs(args.img_dir or paths.DATA_IMG_DIR, args.mask_dir or paths.DATA_MASK_DIR)
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
