@@ -1,5 +1,21 @@
 # Phase 2 kickoff — for Lasana (Person 4), 2026-08-16
 
+## Update 2026-08-16 — Kalana's results landed, paper's Table 1 updated
+
+Kalana's full-scale SegFormer run (`Phase2/Kalana-Person2/results/`) is in
+now — `baseline_comparison.{csv,md}` there has both variants (SegFormer-B0:
+Dice 0.8743/IoU 0.7766/AAMO 0.0334; +Attention: Dice 0.8690/IoU 0.7684/AAMO
+0.5752), and I've already folded those rows into `paper_acm/main.tex`
+Table 1 directly (commit `0f08f39`) since it was blocking the paper text.
+Your checklist item "fold the SegFormer-B0/+Attention rows into
+`baseline_comparison.md` alongside your U-Net row" is still worth doing for
+`Phase1/Lasana-Person4_Evaluation/results/baseline_comparison.md` /
+`ablation_mean_std.md` specifically (Kalana's file is in his own Phase 2
+folder, not yours) — that's the one your multi-seed ablation table builds
+on. Everything's still single-seed, so the Week 10 multi-seed task is
+unblocked on the SegFormer side now (still waiting on Dinura's λ-sweep for
+the tuned attention config).
+
 ## Where you actually stand
 
 Your Phase 1 work is done and merged: `adapters/unet_torch.py`, the

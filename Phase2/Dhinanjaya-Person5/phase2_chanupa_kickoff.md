@@ -1,5 +1,15 @@
 # Phase 2 kickoff — for Chanupa (Person 1), 2026-08-15
 
+## Update 2026-08-16 — FYI, full-scale SegFormer results landed in the paper
+
+Kalana's full-scale run (`Phase2/Kalana-Person2/`) is merged into
+`paper_acm/main.tex` (commit `0f08f39`, pushed to `main`): abstract, Table 1,
+Figure 2, and the caveat paragraphs all now use the real 5,108-image/
+20-epoch numbers instead of the smoke-scale ones. Checkpoints stayed on
+Drive, not git, so no checkpoint-size issue came up — the flag below about
+your fp16 fix wasn't needed this time, but still stands if a future
+checkpoint does hit the 100 MiB wall. Nothing needed from you here.
+
 ## What the proposal actually assigns you
 
 Section 6.2.2's Phase 2 work-distribution table gives Person 1 — Data &

@@ -1,5 +1,16 @@
 # Phase 2 kickoff — for Dinura (Person 3), 2026-08-16
 
+## Update 2026-08-16 — Kalana's default-λ2 run is now the paper's data point
+
+Kalana's full-scale run landed and is now in `paper_acm/main.tex` (commit
+`0f08f39`): Table 1's "SegFormer-B0 + Attention Consistency Loss" row is his
+fixed λ2=0.3/σ=8/MSE checkpoint (AAMO 0.0334→0.5752, Dice/IoU essentially
+tied vs. vanilla), same held-out 766-image test set as everyone else. This
+doesn't change your task — it's still the baseline data point, not the
+λ-sweep — but it means the row your tuned config would replace is now live
+in the actual paper text, not just a results file. If your sweep beats it,
+ping Dhinanjaya and the Table 1 row / abstract numbers get swapped again.
+
 ## Why this doc exists now, not two weeks ago
 
 Chanupa and Kalana both got a Phase 2 kickoff doc already
