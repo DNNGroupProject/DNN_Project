@@ -90,7 +90,11 @@ def evaluate_variant(variant: str, args) -> dict:
     print(f"AAMO = {aamo_val}")
 
     params = count_torch_params(model)
-    gflops = gflops_torch(model, input_size=(1, 3, 256, 256))
+    # Person 4's gflops_torch() does model.to("cpu") for thop. That mutates
+    # this same object; the FPS probe below uses a CUDA batch and will crash
+    # (cuda input vs cpu weights) unless we put the model back.
+    gflops = gflops_torch(model, input_size=(1, 3, 256, 256), device="cpu")
+    model.to(DEVICE)
 
     warm_x = to_model_input(images[0:1]).to(DEVICE)
 

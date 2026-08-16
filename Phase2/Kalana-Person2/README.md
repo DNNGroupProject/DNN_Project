@@ -11,7 +11,7 @@ Colab (`Phase1/Kalana-Person2/segformer_baseline_scratch_colab.ipynb`).
 | Weeks | Deliverable | Status |
 |---|---|---|
 | 5–6 | Support attention-extraction ↔ Person 3 loss integration | Pipeline already lives in `Phase1/Dinura-Person3/attention_consistency/` — this folder consumes it, does not reimplement it |
-| 5–9 (handoff) | Full-scale SegFormer-B0 train + eval (vanilla and +Attention Consistency Loss) | Notebook + wrappers ready; GPU numbers not in yet — run the Colab |
+| 5–9 (handoff) | Full-scale SegFormer-B0 train + eval (vanilla and +Attention Consistency Loss) | **Done** — GPU Colab, 3576/766/766, 20 epochs. Numbers in `results/` |
 
 ## What this folder is for
 
@@ -113,10 +113,24 @@ Hyperparameters (proposal §4.1 / Person 3 notebook, full audited split):
 
 ## Results
 
-Not trained yet. Smoke-scale numbers (400 / 60 / 60, 8 epochs, CPU) still live
-only in `Phase1/Dinura-Person3/results/` and must **not** be copied here as if
-they were this run. After the Colab pass, this section gets the full-scale
-rows.
+Full-scale GPU run (5,108 pairs, 3576/766/766 split, seed 42, 20 epochs). Test
+set is the same 766 images as Chanupa's U-Net baseline. Eval used each
+variant's best-val checkpoint (vanilla epoch 5, att epoch 3). Weights stay on
+Drive under `MyDrive/segformer_full_scale_outputs/checkpoints/` (not committed).
+
+| Model | Dice | IoU | F1 | AAMO | Params | GFLOPs |
+|---|---|---|---|---|---|---|
+| SegFormer-B0 (no attention loss) | 0.8743 | 0.7766 | 0.8743 | **0.0334** | 3.71M | 1.692 |
+| SegFormer-B0 + Attention Consistency Loss | 0.8690 | 0.7684 | 0.8690 | **0.5752** | 3.71M | 1.692 |
+
+AAMO jumps **0.0334 → 0.5752** (~17×). Dice/IoU are essentially tied (vanilla
+slightly ahead). Smoke-scale (400/8, CPU) had been 0.8017/0.0144 vs
+0.8191/0.432 — same direction on AAMO, and the smoke-scale Dice *gain* from
+the attention loss did **not** hold at full scale.
+
+Honest caveat: both variants overfit (train Dice ~0.90 by epoch 20; val Dice
+peaked at epoch 5 / 3). Paper rows use `*_best.pt`. Qualitative figures are
+`results/attention_drift_figures/attention_drift_0N_full_scale.png`.
 
 ## Cross-folder edits
 

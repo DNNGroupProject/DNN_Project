@@ -1,0 +1,17 @@
+{
+  "variant": "att",
+  "n_train": 3576,
+  "n_val": 766,
+  "epochs": 20,
+  "batch_size": 1,
+  "lr": 6e-05,
+  "lambda2": 0.3,
+  "att_mode": "mse",
+  "best_val_dice": 0.7902275639504656,
+  "final_val_dice": 0.7761249395915015,
+  "final_val_iou": 0.6987205941125325,
+  "wall_clock_s": 7135.7,
+  "device": "cuda",
+  "img_dir": "/content/segformer_full_scale/data/images",
+  "output_dir": "/content/drive/MyDrive/segformer_full_scale_outputs/results"
+}
