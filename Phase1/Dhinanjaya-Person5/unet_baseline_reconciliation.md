@@ -58,18 +58,24 @@ There's also `checkpoints/unet_fixture_random.pt` (0.5 MB, untrained, deliberate
 
 ## What's needed — Lasana
 
-- [ ] Write a PyTorch U-Net adapter (e.g. `adapters/unet_torch.py`) analogous to the existing `adapters/unet_keras.py`, so `evaluate.py --model unet` can load Chanupa's checkpoint instead of (or alongside) the Keras one.
-- [ ] Benchmark FPS for Chanupa's model — `efficiency.py` already has `measure_fps`, just needs to run against the new adapter. GFLOPs (109.48) is already known from Chanupa's notebook; worth double-checking it against `efficiency.py`'s own GFLOPs measurement for consistency.
-- [ ] Once the adapter works, re-point `config.py:23`'s `UNET_CKPT` at the new checkpoint, re-run `evaluate.py --model unet`, and regenerate `results/baseline_comparison.md`/`.csv` with the new numbers.
+- [x] Write a PyTorch U-Net adapter (e.g. `adapters/unet_torch.py`) analogous to the existing `adapters/unet_keras.py`, so `evaluate.py --model unet` can load Chanupa's checkpoint instead of (or alongside) the Keras one.
+- [x] Benchmark FPS for Chanupa's model — `efficiency.py` already has `measure_fps`, just needs to run against the new adapter. GFLOPs (109.48) is already known from Chanupa's notebook; worth double-checking it against `efficiency.py`'s own GFLOPs measurement for consistency.
+- [x] Once the adapter works, re-point `config.py:23`'s `UNET_CKPT` at the new checkpoint, re-run `evaluate.py --model unet`, and regenerate `results/baseline_comparison.md`/`.csv` with the new numbers.
+
+### Done — Lasana's reply (2026-08-15, merged into `main` 2026-08-16)
+
+`adapters/unet_torch.py` loads Chanupa's checkpoint (`/255` then ImageNet mean/std normalization — matches `dataset.py`, do not skip). `evaluate.py --model unet` now reports **dataset-wide** Dice/IoU (TP/FP accumulated over all 766 test images, per `metrics.py`'s explicit "don't average per-batch" design): **Dice 0.8615, IoU 0.7568**. Params 31,037,698, GFLOPs 109.48 (matches `test_metrics.txt`), FPS 1.47 (~681ms/img, CPU — re-measure on GPU if needed for the paper).
+
+Note: this dataset-wide number differs slightly from Chanupa's own notebook figure (Dice 0.8563/IoU 0.7534), which uses batch-mean (avg of per-batch-of-8 Dice/IoU) — same checkpoint and split, different reduction. **Decision: use the dataset-wide number (0.8615/0.7568)** for consistency with every other row in `baseline_comparison.md`, which is computed the same way via `evaluate.py`.
 
 ## After both are done
 
-Ping me (Dhinanjaya) once the new `baseline_comparison.md` is regenerated — I'll update the paper draft's U-Net row and the efficiency-comparison prose to match, and re-verify the ACM PDF still compiles within the page limit.
+**Done 2026-08-16.** Paper draft's U-Net row and efficiency-comparison prose updated to Dice 0.8615/IoU 0.7568/31.04M params/109.48 GFLOPs/1.47 FPS in both `paper_acm/main.tex` and `short_paper_draft.md`; ACM PDF recompiled, still 4 pages, within the course's 4-page-excluding-references limit.
 
 ---
 
-## Status
+## Status: CLOSED.
 
-Chanupa's half is done; Lasana's three items are unblocked and outstanding. Nothing is waiting on Chanupa.
+Both Chanupa's and Lasana's items are done, merged, and reflected in the paper.
 
 One thing for the paper, Dhinanjaya, separate from this reconciliation: the augmentation ablation is now run at full scale (`Phase1/Chanupa-Person1/results/augmentation_ablation.md`). Augmentation **does not help** the U-Net baseline — test Dice 0.8604 → 0.8505 with it on. Supportable claim: *"augmentation did not improve the U-Net baseline under our training budget (−0.010 Dice)."* Not supportable: that augmentation doesn't help this task — neither arm ever overfits in 20 epochs, which is the regime where it would pay, and it's a single seed. The caveats are written up in that folder's README.

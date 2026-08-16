@@ -17,10 +17,14 @@ behind it. This
 > the rest of the team (§6.1.2 review step still pending). Citation numbers
 > are provisional pending final bibliography.
 >
-> **Known unresolved issue:** the U-Net baseline row below conflates two
-> different models (Lasana's Keras U-Net vs. Chanupa's PyTorch U-Net) — see
-> `unet_baseline_reconciliation.md`. Not fixed in this draft yet; waiting on
-> Chanupa (checkpoint) and Lasana (adapter + re-eval).
+> **Resolved 2026-08-16:** the U-Net baseline row below is now Chanupa's
+> PyTorch U-Net (31.04M params), trained and evaluated with the same
+> split/seed/training loop as the SegFormer runs, via Lasana's
+> `adapters/unet_torch.py`. Dice/IoU are dataset-wide (TP/FP/FN accumulated
+> over all 766 test images), the same reduction used for every other row —
+> see `unet_baseline_reconciliation.md` for the full history and
+> `Phase1/Lasana-Person4_Evaluation/results/baseline_comparison.md` for the
+> source numbers.
 
 # Explainability-Guided SegFormer for Forest Cover Segmentation Using Attention Consistency Supervision
 
@@ -49,8 +53,9 @@ evaluate interpretability numerically rather than only visually. In
 preliminary small-scale experiments (8-epoch, 400-image CPU runs), the
 proposed method raises AAMO from 0.0144 to 0.432 relative to a vanilla
 SegFormer-B0 baseline while also slightly improving Dice (0.8017→0.8191)
-and IoU (0.6690→0.6936), against a U-Net baseline (Dice 0.8492). Full-scale
-validation (5,108 images, complete ablation study) is ongoing (Phase 2).
+and IoU (0.6690→0.6936), against a full-scale-trained U-Net baseline
+(Dice 0.8615, IoU 0.7568). Full-scale validation (5,108 images, complete
+ablation study) is ongoing (Phase 2).
 
 ## 1. Introduction
 
@@ -199,12 +204,13 @@ thresholded attention and ground-truth forest mask).
 
 ## 5. Preliminary Results
 
-CPU smoke run, 400/60/60 train/val/test images, 8 epochs
+CPU smoke run, 400/60/60 train/val/test images, 8 epochs, except U-Net
+(full-scale, 3576/766/766, 20 epochs)
 (`Phase1/Lasana-Person4_Evaluation/results/baseline_comparison.md`):
 
 | Model | Dice | IoU | F1 | AAMO | Params | GFLOPs | FPS |
 |---|---|---|---|---|---|---|---|
-| U-Net (CNN baseline) | 0.8492 | 0.7379 | 0.8492 | n/a | 1.95M | n/a | 3.48 |
+| U-Net (CNN baseline) | 0.8615 | 0.7568 | 0.8615 | n/a | 31.04M | 109.48 | 1.47 |
 | DeepLabV3+ (MobileNetV3, extra baseline) | 0.7369 | 0.5834 | 0.7369 | n/a | 11.02M | n/a | 8.51 |
 | SegFormer-B0 (no attention loss) | 0.8017 | 0.6690 | 0.8017 | 0.0144 | 3.71M | 1.69 | 12.45 |
 | SegFormer-B0 + Attention Consistency Loss | 0.8191 | 0.6936 | 0.8191 | **0.432** | 3.71M | 1.69 | 14.55 |
