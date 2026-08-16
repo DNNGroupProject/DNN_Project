@@ -1,5 +1,18 @@
 # Phase 2 kickoff — for Kalana (Person 2), 2026-08-15
 
+## Update 2026-08-16 — paper landed (`0f08f39`, pushed to `main`)
+
+Your full-scale results (`Phase2/Kalana-Person2/results/`) are in the paper
+now: abstract, Table 1, Figure 2 (swapped to
+`attention_drift_01_full_scale.png`), Implementation Details, and the
+limitations/discussion/threats-to-validity sections all updated to the real
+5,108-image/20-epoch numbers (AAMO 0.0334→0.5752, Dice/IoU essentially tied
+rather than the old smoke-scale "improves" framing). `main.pdf` recompiles
+clean at 4 pages. Checklist below is done — nothing further needed from you
+on this unless Dinura's λ2-sweep (mentioned below) ends up beating your
+checkpoint, in which case the "+ Attention Consistency Loss" row's
+provenance may shift later.
+
 ## Update 2026-08-16 — training is running on Colab
 
 Scaffolding merged into `main` (`Phase2/Kalana-Person2/`: `paths.py`,
