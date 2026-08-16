@@ -1,17 +1,12 @@
-# Full-scale results — not here yet
+# Full-scale results — landed 2026-08-16
 
-This directory is empty of metrics on purpose. The paper's current SegFormer
-numbers (AAMO 0.0144 → 0.432, etc.) are the Person 3 CPU smoke run
-(400 images / 8 epochs) and live under `Phase1/Dinura-Person3/results/`.
-Copying them here would make them look like this run.
+GPU Colab run, 5,108-pair dataset, split 3576/766/766 seed 42, 20 epochs.
+Test = Chanupa U-Net's held-out 766 images. Checkpoints on Drive, not in git.
 
-After `segformer_full_scale_colab.ipynb` finishes, this folder should contain:
+| Model | Dice | IoU | F1 | AAMO | best epoch |
+|---|---|---|---|---|---|
+| SegFormer-B0 (no attention loss) | 0.8743 | 0.7766 | 0.8743 | 0.0334 | 5 |
+| SegFormer-B0 + Attention Consistency Loss | 0.8690 | 0.7684 | 0.8690 | 0.5752 | 3 |
 
-- `train_summary_{vanilla,att}.json`
-- `training_log_{vanilla,att}.csv`
-- `eval_{vanilla,att}.json`
-- `baseline_comparison.{csv,md}`
-- `prediction_grid_{vanilla,att}.png`
-- `attention_drift_figures/attention_drift_0N_full_scale.png`
-
-Then ping Dhinanjaya — those files are what replace the smoke-scale rows.
+Ping Dhinanjaya — these replace the smoke-scale rows (400 images / 8 epochs)
+in the paper abstract, Table 1, Figure 2, and the scale caveats.

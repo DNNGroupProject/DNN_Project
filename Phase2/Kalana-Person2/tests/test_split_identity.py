@@ -6,10 +6,9 @@ algorithm as Chanupa's `dataset.py`: sort mask filenames, stdlib
 lists ever diverge again, the paper's U-Net row and the SegFormer rows
 would not share a held-out test set.
 
-These tests need no GPU and no `transformers`. The synthetic test always
-runs. The real-dataset test runs when `Phase1/Kalana-Person2/masks` is
-present. The live-import test runs only if cv2/torch can load Person 3's
-`data.py`.
+These tests need no GPU and no `transformers`. The real-dataset test runs when the mask folder is present (`data/masks` in
+the Colab zip, or `Phase1/Kalana-Person2/masks` in the repo). The live-import
+test runs only if Person 1's `dataset.py` and Person 3's `data.py` can load.
 
 Run:
     python tests/test_split_identity.py
@@ -22,14 +21,15 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
-REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
 from paths import (  # noqa: E402
+    CHANUPA_DIR,
     DATA_MASK_DIR,
     N_TEST,
     N_TRAIN,
     N_VAL,
+    PERSON3_DIR,
     SEED,
 )
 
@@ -118,12 +118,10 @@ def test_real_mask_dir_matches_when_present():
 
 def test_live_make_splits_matches_chanupa_when_importable():
     """Call the actual Person 3 / Person 1 functions, not the copies above."""
-    chanupa_dir = REPO_ROOT / "Phase1" / "Chanupa-Person1"
-    person3_dir = REPO_ROOT / "Phase1" / "Dinura-Person3"
-    if str(chanupa_dir) not in sys.path:
-        sys.path.insert(0, str(chanupa_dir))
-    if str(person3_dir) not in sys.path:
-        sys.path.insert(0, str(person3_dir))
+    if CHANUPA_DIR.is_dir() and str(CHANUPA_DIR) not in sys.path:
+        sys.path.insert(0, str(CHANUPA_DIR))
+    if str(PERSON3_DIR) not in sys.path:
+        sys.path.insert(0, str(PERSON3_DIR))
 
     try:
         from dataset import list_mask_files, make_splits as chanupa_make_splits

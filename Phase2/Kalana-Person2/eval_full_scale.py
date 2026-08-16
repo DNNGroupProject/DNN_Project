@@ -7,26 +7,25 @@ are Person 4's folder, left untouched. Results stay under this folder.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from pathlib import Path
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 
 from paths import (
-    CKPT_DIR,
-    DATA_IMG_DIR,
-    DATA_MASK_DIR,
     N_TEST,
     N_TRAIN,
     N_VAL,
-    RESULTS_DIR,
     SEED,
     add_teammate_paths,
     apply_data_dirs,
     ensure_output_dirs,
 )
+import paths
 
 add_teammate_paths()
 apply_data_dirs()
@@ -36,7 +35,6 @@ from attention_consistency import build_segformer, grad_rollout_attention_map  #
 from attention_consistency.data import load_pairs, make_splits, to_model_input  # noqa: E402
 from attention_consistency.segformer_model import forest_prob  # noqa: E402
 from efficiency import count_torch_params, efficiency_row, gflops_torch, measure_fps  # noqa: E402
-from evaluate import row_dict, save_prediction_grid, write_comparison_table  # noqa: E402
 from metrics import ConfusionCounts, binarize, format_metrics, metrics_from_counts  # noqa: E402
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,7 +46,7 @@ VARIANT_LABEL = {
 
 
 def load_checkpoint(variant: str) -> tuple:
-    ckpt_path = CKPT_DIR / f"segformer_b0_{variant}_best.pt"
+    ckpt_path = paths.CKPT_DIR / f"segformer_b0_{variant}_best.pt"
     if not ckpt_path.exists():
         raise FileNotFoundError(
             f"{ckpt_path} not found — run train_full_scale.py --variant {variant} first."
@@ -92,7 +90,11 @@ def evaluate_variant(variant: str, args) -> dict:
     print(f"AAMO = {aamo_val}")
 
     params = count_torch_params(model)
-    gflops = gflops_torch(model, input_size=(1, 3, 256, 256))
+    # Person 4's gflops_torch() does model.to("cpu") for thop. That mutates
+    # this same object; the FPS probe below uses a CUDA batch and will crash
+    # (cuda input vs cpu weights) unless we put the model back.
+    gflops = gflops_torch(model, input_size=(1, 3, 256, 256), device="cpu")
+    model.to(DEVICE)
 
     warm_x = to_model_input(images[0:1]).to(DEVICE)
 
@@ -111,26 +113,104 @@ def evaluate_variant(variant: str, args) -> dict:
     row["device"] = str(DEVICE)
 
     ensure_output_dirs()
-    save_prediction_grid(images, masks, probs, RESULTS_DIR / f"prediction_grid_{variant}.png", threshold=0.5)
-    (RESULTS_DIR / f"eval_{variant}.json").write_text(json.dumps(row, indent=2), encoding="utf-8")
-    write_comparison_table([row], RESULTS_DIR)
-    _relabel_comparison_table()
-    print(f"Wrote {RESULTS_DIR / f'eval_{variant}.json'}  (Lasana-Person4 left untouched)")
+    save_prediction_grid(images, masks, probs, paths.RESULTS_DIR / f"prediction_grid_{variant}.png", threshold=0.5)
+    (paths.RESULTS_DIR / f"eval_{variant}.json").write_text(json.dumps(row, indent=2), encoding="utf-8")
+    write_comparison_table([row], paths.RESULTS_DIR)
+    print(f"Wrote {paths.RESULTS_DIR / f'eval_{variant}.json'}  (Lasana-Person4 left untouched)")
     return row
 
 
-def _relabel_comparison_table() -> None:
-    md = RESULTS_DIR / "baseline_comparison.md"
-    if not md.exists():
-        return
-    text = md.read_text(encoding="utf-8")
-    text = text.replace(
-        "# Baseline comparison (Person 4)",
-        "# Full-scale SegFormer (Phase 2 / Kalana-Person2)\n\n"
-        "Person 4 formulas (`metrics.py` / `aamo.py` / `efficiency.py`). "
-        "Smoke-scale rows were not copied here.",
-    )
-    md.write_text(text, encoding="utf-8")
+def save_prediction_grid(
+    images: np.ndarray,
+    masks: np.ndarray,
+    probs: np.ndarray,
+    out_path: Path,
+    n: int = 6,
+    threshold: float = 0.5,
+) -> None:
+    """Same grid as Person 4's evaluate.save_prediction_grid — copied so the
+    Colab zip does not need evaluate.py / config.py (those mkdir in Person 4's folder)."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    n = min(n, len(images))
+    preds = binarize(probs[:n], threshold)
+    fig, axes = plt.subplots(n, 3, figsize=(9, 3 * n))
+    if n == 1:
+        axes = np.expand_dims(axes, 0)
+    for i in range(n):
+        axes[i, 0].imshow(np.clip(images[i], 0, 1))
+        axes[i, 0].set_title("Image")
+        axes[i, 1].imshow(masks[i], cmap="gray", vmin=0, vmax=1)
+        axes[i, 1].set_title("GT")
+        axes[i, 2].imshow(preds[i], cmap="gray", vmin=0, vmax=1)
+        axes[i, 2].set_title("Pred")
+        for j in range(3):
+            axes[i, j].axis("off")
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
+
+
+def row_dict(model_label: str, seg: Dict[str, float], eff: Dict[str, Any], aamo_val: Any) -> Dict[str, Any]:
+    return {
+        "model": model_label,
+        "dice": round(seg["dice"], 4),
+        "iou": round(seg["iou"], 4),
+        "f1": round(seg["f1"], 4),
+        "precision": round(seg["precision"], 4),
+        "recall": round(seg["recall"], 4),
+        "pixel_acc": round(seg["pixel_acc"], 4),
+        "aamo": aamo_val if aamo_val != "n/a" else "n/a",
+        "params": eff["params"],
+        "gflops": eff["gflops"],
+        "fps": eff["fps"],
+        "ms_per_image": eff["ms_per_image"],
+    }
+
+
+def write_comparison_table(rows: List[Dict[str, Any]], out_dir: Path) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "baseline_comparison.csv"
+    md_path = out_dir / "baseline_comparison.md"
+    fields = [
+        "model", "dice", "iou", "f1", "precision", "recall", "pixel_acc",
+        "aamo", "params", "gflops", "fps", "ms_per_image",
+    ]
+    existing: List[Dict[str, Any]] = []
+    if csv_path.exists():
+        with open(csv_path, newline="", encoding="utf-8") as f:
+            existing = list(csv.DictReader(f))
+    by_name = {r["model"]: r for r in existing}
+    for r in rows:
+        by_name[r["model"]] = {k: r.get(k, "") for k in fields}
+    merged = list(by_name.values())
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fields)
+        w.writeheader()
+        for r in merged:
+            w.writerow({k: r.get(k, "") for k in fields})
+    lines = [
+        "# Full-scale SegFormer (Phase 2 / Kalana-Person2)",
+        "",
+        "Person 4 formulas (`metrics.py` / `aamo.py` / `efficiency.py`). Smoke-scale rows were not copied here.",
+        "",
+        "| Model | Dice | IoU | F1 | AAMO | Params | GFLOPs | FPS |",
+        "|-------|------|-----|----|------|--------|--------|-----|",
+    ]
+    for r in merged:
+        lines.append(
+            f"| {r.get('model','')} | {r.get('dice','')} | {r.get('iou','')} | "
+            f"{r.get('f1','')} | {r.get('aamo','')} | {r.get('params','')} | "
+            f"{r.get('gflops','')} | {r.get('fps','')} |"
+        )
+    lines.append("")
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Wrote {csv_path}")
+    print(f"Wrote {md_path}")
 
 
 def parse_args():
@@ -140,14 +220,14 @@ def parse_args():
     p.add_argument("--n-val", type=int, default=N_VAL)
     p.add_argument("--n-test", type=int, default=N_TEST)
     p.add_argument("--seed", type=int, default=SEED)
-    p.add_argument("--img-dir", type=Path, default=DATA_IMG_DIR)
-    p.add_argument("--mask-dir", type=Path, default=DATA_MASK_DIR)
+    p.add_argument("--img-dir", type=Path, default=None)
+    p.add_argument("--mask-dir", type=Path, default=None)
     return p.parse_args()
 
 
 def main():
     args = parse_args()
-    apply_data_dirs(args.img_dir, args.mask_dir)
+    apply_data_dirs(args.img_dir or paths.DATA_IMG_DIR, args.mask_dir or paths.DATA_MASK_DIR)
     variants = ["vanilla", "att"] if args.variant == "both" else [args.variant]
     rows = [evaluate_variant(v, args) for v in variants]
     print("\nDone. Rows written under Phase2/Kalana-Person2/results/:")
