@@ -1,5 +1,19 @@
 # Phase 2 kickoff — for Dinura (Person 3), 2026-08-16
 
+## Update 2026-08-16 — nudge: this is now the critical-path bottleneck
+
+Nothing's landed yet on the λ-sweep — no `Phase2/Dinura-Person3/` folder,
+no branch activity. Flagging because you're now the one thing blocking two
+other people: Lasana's Week 10 multi-seed ablation needs your tuned
+checkpoint, and my Boundary Refinement Module integration needs a base
+checkpoint to wire into. Both are otherwise idle waiting on this. Kalana's
+default-λ2 run (see below) already unblocked the paper's headline numbers,
+so there's no time pressure on that front — but the sooner your sweep
+starts, the sooner Lasana and I can move. Full task details and the
+ready-to-use `--lambda2`/`--att-mode` CLI flags on
+`Phase2/Kalana-Person2/train_full_scale.py` are below — nothing new to
+design, just start running it.
+
 ## Update 2026-08-16 — Kalana's default-λ2 run is now the paper's data point
 
 Kalana's full-scale run landed and is now in `paper_acm/main.tex` (commit
