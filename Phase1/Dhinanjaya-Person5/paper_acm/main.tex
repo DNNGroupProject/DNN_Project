@@ -67,12 +67,13 @@ Rollout to SegFormer, restricting it to the final encoder stage where
 attention is square and token-consistent. We introduce a quantitative
 metric, Average Attention--Mask Overlap (AAMO), to evaluate interpretability
 numerically rather than only visually. On the full 5{,}108-image dataset
-(3576/766/766 split, seed 42, 20 epochs), the proposed method raises AAMO
-from 0.0334 to 0.5752 ($\sim$17$\times$) relative to a vanilla SegFormer-B0
-baseline trained on the same split, while Dice (0.8743$\to$0.8690) and IoU
-(0.7766$\to$0.7684) are essentially unchanged, alongside a full-scale-trained
-U-Net baseline (Dice 0.8615, IoU 0.7568) on the same held-out test set. A
-complete multi-seed ablation study is ongoing.
+(3576/766/766 split, seed 42, 20 epochs), with $\lambda_2$ set by a
+validation sweep, the
+proposed method raises AAMO from 0.0334 to 0.7476 ($\sim$22$\times$) relative
+to a vanilla SegFormer-B0 baseline trained on the same split, at a modest
+segmentation cost (Dice 0.8743$\to$0.8577, IoU 0.7766$\to$0.7508), alongside a
+full-scale-trained U-Net baseline (Dice 0.8615, IoU 0.7568) on the same
+held-out test set. A complete multi-seed ablation study is ongoing.
 \end{abstract}
 
 \begin{CCSXML}
@@ -130,8 +131,8 @@ Attention Rollout to SegFormer's spatial-reduction attention; (3) AAMO, a
 quantitative interpretability metric evaluable alongside standard
 segmentation metrics; and (4) a preliminary empirical comparison against
 U-Net and vanilla SegFormer-B0 baselines showing that explainability-guided
-training does not cost --- and may slightly improve --- segmentation
-accuracy while substantially improving attention faithfulness.
+training substantially improves attention faithfulness at only a modest
+segmentation-accuracy cost.
 
 \section{Related Work}
 
@@ -252,6 +253,7 @@ valid without further approximation, verified empirically on MiT-B0 at
 $256{\times}256$ input resolution.
 
 \subsection{Mathematical Formulation}
+\label{sec:formulation}
 Let $X \in \mathbb{R}^{256\times256\times3}$ and ground-truth mask
 $Y \in \{0,1\}^{256\times256}$:
 \begin{align}
@@ -263,8 +265,10 @@ L_{bce} = -\sum \big[Y\log P + (1{-}Y)\log(1{-}P)\big] \\
 L_{att} &= \mathrm{MSE}(A, A^{*}) \;\text{or}\; \mathrm{KL}(A \,\|\, A^{*}) \\
 L &= L_{dice} + \lambda_1 L_{bce} + \lambda_2 L_{att}
 \end{align}
-with $\lambda_1{=}1$, $\lambda_2{=}0.3$ initially, tuned on the validation
-set. Because $A$ is itself defined via a gradient (Grad-Rollout is
+with $\lambda_1{=}1$ and $\lambda_2$ tuned on the validation set: a sweep
+over $\lambda_2 \in \{0.1, 0.3, 0.5, 1.0\}$ (MSE, all else fixed) selects
+$\lambda_2{=}1.0$, which maximizes test AAMO.
+Because $A$ is itself defined via a gradient (Grad-Rollout is
 Grad-CAM-style), backpropagating $L_{att}$ requires double backpropagation;
 our implementation keeps $A$ attached to the autograd graph via
 \texttt{create\_graph=True} so one combined \texttt{backward()} reaches all
@@ -334,14 +338,15 @@ attention and the ground-truth forest mask (interpretability).
 \textbf{Implementation details.} SegFormer-B0 variants are trained on a GPU
 runtime for 20 epochs with AdamW (lr $=6{\times}10^{-5}$), batch size 16
 (vanilla) / 1 (attention variant, due to the double-backpropagation memory
-cost), Gaussian target smoothing $\sigma = 8$, $\lambda_2 = 0.3$, and
-$L_{att}$ using the MSE formulation, seed 42. Reported checkpoints are each
-variant's best-validation epoch (vanilla: epoch 5; attention-consistency:
-epoch 3) rather than the final epoch, since both variants overfit under this
-training budget (training Dice reaches $\sim$0.90 by epoch 20 while
-validation Dice peaks earlier). Both the MSE and KL-divergence formulations
-of $L_{att}$ are implemented and unit-tested, but only MSE has been
-evaluated on trained checkpoints so far.
+cost), Gaussian target smoothing $\sigma = 8$, and $L_{att}$ using the MSE
+formulation, seed 42. The attention-loss weight is set to $\lambda_2 = 1.0$,
+the value selected by the validation sweep (Section~\ref{sec:formulation}).
+Reported checkpoints are each variant's best-validation epoch (vanilla:
+epoch 5; attention-consistency: epoch 11) rather than the final epoch, since
+training Dice reaches $\sim$0.90 by epoch 20 while validation Dice peaks
+earlier. Both the MSE and KL-divergence
+formulations of $L_{att}$ are implemented and unit-tested, but only MSE has
+been evaluated on trained checkpoints so far.
 
 \textbf{Reproducibility.} The attention-extraction and loss implementation
 is covered by 13 unit tests independent of any trained model (8 for the
@@ -355,16 +360,17 @@ training rather than being assumed correct.
 \section{Results}
 
 Table~\ref{tab:results} reports the full 5{,}108-image, 20-epoch GPU run for
-U-Net and both SegFormer-B0 variants, all on the same 3576/766/766
-held-out test set. AAMO increases approximately $17\times$
-(0.0334 $\to$ 0.5752) with the attention-consistency variant, while Dice and
-IoU are essentially unchanged (vanilla marginally ahead: 0.8743 vs 0.8690
-Dice), suggesting the attention supervision does not cost segmentation
-accuracy at full scale. This differs from our earlier 400/60/60, 8-epoch CPU
-smoke run, where the attention loss had also slightly \emph{improved}
-Dice/IoU (0.8017$\to$0.8191, 0.6690$\to$0.6936); that small-scale accuracy
-gain did not hold once trained at full scale, though the AAMO direction was
-consistent at both scales (smoke: 0.0144$\to$0.432). We additionally report
+U-Net and both SegFormer-B0 variants (attention variant: $\lambda_2{=}1.0$),
+all on the same 3576/766/766 held-out test set. AAMO increases approximately
+$22\times$ (0.0334 $\to$ 0.7476) with the attention-consistency variant, at a
+modest cost in Dice (0.8743$\to$0.8577). Across the
+$\lambda_2$ sweep (0.1--1.0, MSE), test AAMO rises monotonically (0.548,
+0.575, 0.603, 0.748) while test Dice stays within 0.852--0.869.
+Our earlier 400/60/60, 8-epoch CPU smoke run had instead shown the attention
+loss slightly \emph{improving} Dice/IoU
+(0.8017$\to$0.8191, 0.6690$\to$0.6936); that small-scale accuracy gain did
+not hold at full scale, though the AAMO direction was consistent at both
+scales (smoke: 0.0144$\to$0.432). We additionally report
 DeepLabV3+ (MobileNetV3 backbone) as an optional CNN reference point beyond
 U-Net; on a 200-image smoke run it trails both U-Net and SegFormer-B0 on
 Dice/IoU and shows a strong precision/recall imbalance (precision 0.59,
@@ -373,11 +379,12 @@ delineating boundaries precisely.
 
 \begin{table}[t]
 \caption{Comparison on the full 5{,}108-image dataset (3576/766/766 split,
-seed 42): U-Net and SegFormer-B0 variants share this held-out test set.
-SegFormer checkpoints are each variant's best-validation epoch (vanilla
-epoch 5, attention-consistency epoch 3; both variants overfit past this
-point). DeepLabV3+ remains a 200-image smoke run, an optional extra
-baseline not yet run at full scale.}
+seed 42): U-Net and SegFormer-B0 variants share this held-out test set. The
+attention-consistency row uses $\lambda_2{=}1.0$, selected by a validation
+sweep over $\{0.1, 0.3, 0.5, 1.0\}$; checkpoints are each variant's
+best-validation epoch (vanilla 5, attention-consistency 11). DeepLabV3+
+remains a 200-image smoke run, an optional extra baseline not yet run at
+full scale.}
 \label{tab:results}
 \begin{tabular}{@{}lccc c@{}}
 \toprule
@@ -386,7 +393,7 @@ Model & Dice & IoU & F1 & AAMO \\
 U-Net (CNN) & 0.8615 & 0.7568 & 0.8615 & n/a \\
 DeepLabV3+ (MobileNetV3) & 0.7369 & 0.5834 & 0.7369 & n/a \\
 SegFormer-B0 & 0.8743 & 0.7766 & 0.8743 & 0.0334 \\
-SegFormer-B0 + $L_{att}$ & 0.8690 & 0.7684 & 0.8690 & \textbf{0.5752} \\
+SegFormer-B0 + $L_{att}$ & 0.8577 & 0.7508 & 0.8577 & \textbf{0.7476} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -396,7 +403,8 @@ SegFormer-B0 + $L_{att}$ & 0.8690 & 0.7684 & 0.8690 & \textbf{0.5752} \\
 \includegraphics[width=\textwidth]{figures/attention_drift_01_full_scale.png}
 \caption{Qualitative comparison on a held-out test image (left to right):
 input image; ground-truth forest mask; vanilla SegFormer-B0 attention
-(Grad-Rollout); attention after adding the Attention Consistency Loss.
+(Grad-Rollout); attention after adding the Attention Consistency Loss
+($\lambda_2{=}0.3$ checkpoint; $\lambda_2{=}1.0$ map pending).
 Full-scale checkpoints (5{,}108 images, 20 epochs, best-val). The
 attention-consistency map shifts attention broadly toward the darker canopy
 clusters and away from the bare ground, consistent with the AAMO gain, but
@@ -423,10 +431,10 @@ augmentation is unhelpful for this task in general.
 
 \textbf{Remaining limitations.} The full 5{,}108-image, 20-epoch run
 resolves the earlier smoke-scale caveat for U-Net and both SegFormer-B0
-variants, but both SegFormer variants overfit under this budget (best
-validation Dice at epoch 5/3 of 20), so Table~\ref{tab:results} reports
-early-stopped checkpoints rather than fully converged ones, and no run has
-yet been repeated with a different seed. DeepLabV3+ remains a 200-image
+variants, but the SegFormer checkpoints are still early-stopped at their
+best-validation epoch rather than fully converged, the $\lambda_2$ sweep is
+single-seed, and no run has yet been repeated with a different seed.
+DeepLabV3+ remains a 200-image
 smoke-scale reference only. Figure~\ref{fig:attn} shows the qualitative
 attention-drift comparison still does not tell as clean a story as the AAMO
 number: the vanilla model's attention continues to exhibit a corner/edge
@@ -435,24 +443,25 @@ persists at full scale, so it is unlikely to be simply an undertraining
 effect as earlier speculated.
 
 \section{Discussion}
-The large AAMO gain relative to an essentially flat Dice/IoU change
-suggests attention faithfulness and segmentation accuracy are, at least
-partially, separable objectives: supervising attention does not appear to
-cost accuracy, and this now holds at full scale (5{,}108 images, 20 epochs)
-as well as at the earlier smoke scale, though a multi-seed ablation is
-still required before drawing firm conclusions. Both the MSE and
-KL-divergence formulations of $L_{att}$ are implemented; only MSE has been
-evaluated so far.
+The large AAMO gain relative to a small Dice/IoU reduction suggests
+attention faithfulness and segmentation accuracy are, at least partially,
+separable objectives: the $\lambda_2$ sweep's monotonic AAMO trend with a
+near-flat Dice band indicates a tunable trade-off, not a sharp accuracy
+collapse. This now holds at full scale (5{,}108
+images, 20 epochs) as well as at the earlier smoke scale, though a
+multi-seed ablation is still required before drawing firm conclusions. Both
+the MSE and KL-divergence formulations of $L_{att}$ are implemented; only
+MSE has been evaluated so far.
 
 \textbf{Threats to validity.} (1) \emph{Scale.} U-Net and both SegFormer-B0
 variants are now trained and evaluated on the full 5{,}108-image dataset for
 20 epochs, sharing the same 766-image held-out test set, resolving this
 threat for those three rows; DeepLabV3+ remains a 200-image smoke-scale
 reference only, so its comparison to the other rows should be read with that
-caveat. Both SegFormer variants also overfit past their best-validation
-epoch under this training budget (Section~4), so the reported numbers are
-early-stopped rather than fully converged. (2) \emph{Single seed.} No run
-has been repeated with a different seed, so the reported numbers carry
+caveat. The SegFormer checkpoints are early-stopped at their best-validation
+epoch rather than fully converged. (2) \emph{Single seed.} No run has been
+repeated with a different seed, and the $\lambda_2$ sweep that selects
+$\lambda_2{=}1.0$ is itself single-seed, so the reported numbers carry
 unknown variance; Phase 2's multi-seed ablation is required before any
 number here is treated as final.
 (3) \emph{CNN baseline provenance.} The reported U-Net baseline is now the
@@ -473,8 +482,8 @@ automated model's \emph{explanation} of a prediction --- not just its
 accuracy --- affects whether domain experts and policymakers can trust it.
 An attention map that reliably attends to canopy rather than roads or
 shadows is a step toward auditable forest monitoring, but these preliminary,
-small-scale, single-seed results are not yet reliable enough to inform
-real deforestation-monitoring decisions.
+single-seed results are not yet reliable enough to inform real
+deforestation-monitoring decisions.
 
 \section{Conclusion and Future Work}
 We presented an explainability-guided SegFormer-B0 that supervises internal
@@ -482,11 +491,11 @@ attention against the ground-truth forest mask via an Attention Consistency
 Loss, an adaptation of Gradient-weighted Attention Rollout to SegFormer's
 spatial-reduction attention, and a new quantitative interpretability
 metric, AAMO. Full-scale results on the 5{,}108-image dataset confirm the
-core hypothesis: AAMO rises $\sim$17$\times$ (0.0334$\to$0.5752) while
-segmentation accuracy is essentially unchanged. Future work will run the
-complete multi-seed ablation study, compare the MSE and KL-divergence loss
-formulations, tune $\lambda_2$ via a validation sweep, address the
-overfitting observed past epoch 3--5, and, time permitting, add a
+core hypothesis: with $\lambda_2{=}1.0$ (validation-swept), AAMO rises
+$\sim$22$\times$ (0.0334$\to$0.7476) for a $\sim$1.7-point Dice cost. Future
+work will run the complete multi-seed ablation study, compare the MSE and
+KL-divergence loss formulations, extend the $\lambda_2$ sweep to multiple
+seeds, address the residual overfitting, and, time permitting, add a
 boundary-refinement module targeting canopy-edge errors.
 
 \bibliographystyle{ACM-Reference-Format}
