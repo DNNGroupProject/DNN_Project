@@ -1,0 +1,21 @@
+{
+  "variant": "att",
+  "n_train": 3576,
+  "n_val": 766,
+  "epochs": 20,
+  "batch_size": 1,
+  "lr": 6e-05,
+  "lambda2": 0.3,
+  "att_mode": "mse",
+  "best_val_dice": 0.7902275639504656,
+  "final_val_dice": 0.7761249395915015,
+  "final_val_iou": 0.6987205941125325,
+  "wall_clock_s": 7135.7,
+  "device": "cuda",
+  "img_dir": "/content/segformer_full_scale/data/images",
+  "output_dir": "/content/drive/MyDrive/segformer_full_scale_outputs/results",
+  "source": "kalana_default_lambda2",
+  "seeded_from": "C:/Users/ADMIN/Documents/Sem 5 my aca/CS3631 Deep Neural Networks/Project/DNN_Project/Phase2/Kalana-Person2/results",
+  "run_tag": "l2_0.3_mse",
+  "note": "Metrics only. Checkpoint remains on Kalana's Drive at MyDrive/segformer_full_scale_outputs/checkpoints/segformer_b0_att_best.pt"
+}

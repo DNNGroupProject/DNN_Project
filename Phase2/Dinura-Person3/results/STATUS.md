@@ -1,10 +1,15 @@
 # λ2-sweep results — in progress
 
-Scaffold for Person 3's Phase 2 λ-sweep
-(`phase2_dinura_kickoff.md`).
+| Cell | Status |
+|---|---|
+| `l2_0.3_mse` | **Complete** (seeded from Kalana full-scale: test Dice 0.8690, AAMO 0.5752) |
+| `l2_0.1_mse` | Needs Colab GPU (`lambda_sweep_colab.ipynb` Step 3) |
+| `l2_0.5_mse` | Needs Colab GPU |
+| `l2_1_mse` | Needs Colab GPU |
+| KL at winning λ2 | Optional, after MSE cells finish |
 
-- λ2=0.3 / MSE: seeded from Kalana's full-scale run (metrics only).
-- λ2 ∈ {0.1, 0.5, 1.0} / MSE: need Colab GPU via `lambda_sweep_colab.ipynb`.
-- Optional KL at the winning λ2: after MSE cells finish.
+Current interim winner (only complete cell): **`l2_0.3_mse`**. Re-run
+`python aggregate_sweep.py` after any new cell lands.
 
-After any new cell lands: `python aggregate_sweep.py`.
+Checkpoint for λ2=0.3 still on Kalana's Drive:
+`MyDrive/segformer_full_scale_outputs/checkpoints/segformer_b0_att_best.pt`

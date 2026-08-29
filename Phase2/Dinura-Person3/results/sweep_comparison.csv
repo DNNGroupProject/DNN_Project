@@ -1,0 +1,2 @@
+run_tag,lambda2,att_mode,best_val_dice,final_val_dice,final_val_iou,final_val_l_att,test_dice,test_iou,test_aamo,checkpoint_epoch,wall_clock_s,source,status
+l2_0.3_mse,0.3,mse,0.7902275639504656,0.7761249395915015,0.6987205941125325,0.1095804112973105,0.869,0.7684,0.5752,3,7135.7,kalana_default_lambda2,complete

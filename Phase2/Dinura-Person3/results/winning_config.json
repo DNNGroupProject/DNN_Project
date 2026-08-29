@@ -1,0 +1,21 @@
+{
+  "winner": {
+    "run_tag": "l2_0.3_mse",
+    "lambda2": 0.3,
+    "att_mode": "mse",
+    "best_val_dice": 0.7902275639504656,
+    "final_val_dice": 0.7761249395915015,
+    "final_val_iou": 0.6987205941125325,
+    "final_val_l_att": 0.1095804112973105,
+    "wall_clock_s": 7135.7,
+    "test_dice": 0.869,
+    "test_iou": 0.7684,
+    "test_aamo": 0.5752,
+    "checkpoint_epoch": 3,
+    "source": "kalana_default_lambda2",
+    "status": "complete"
+  },
+  "n_cells": 1,
+  "n_complete": 1,
+  "selection_rule": "max test AAMO, then max test Dice, MSE preferred on ties"
+}
