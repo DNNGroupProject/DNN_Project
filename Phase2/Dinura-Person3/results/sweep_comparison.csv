@@ -1,0 +1,5 @@
+run_tag,lambda2,att_mode,best_val_dice,final_val_dice,final_val_iou,final_val_l_att,test_dice,test_iou,test_aamo,checkpoint_epoch,wall_clock_s,source,status
+l2_0.1_mse,0.1,mse,,,,,0.8523,0.7425,0.5481,4,,dinura_sweep,complete
+l2_0.3_mse,0.3,mse,0.7902275639504656,0.7761249395915015,0.6987205941125325,0.1095804112973105,0.869,0.7684,0.5752,3,7135.7,kalana_default_lambda2,complete
+l2_0.5_mse,0.5,mse,,,,,0.8644,0.7612,0.6028,4,,dinura_sweep,complete
+l2_1_mse,1.0,mse,0.7941060952202738,0.786697769797291,0.7100644802732455,0.10267230425019051,0.8577,0.7508,0.7476,11,7315.7,dinura_sweep,complete

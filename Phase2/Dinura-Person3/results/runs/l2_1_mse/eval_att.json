@@ -1,0 +1,21 @@
+{
+  "model": "SegFormer-B0 + Att (\u03bb2=1, mse)",
+  "dice": 0.8577,
+  "iou": 0.7508,
+  "f1": 0.8577,
+  "precision": 0.7885,
+  "recall": 0.9402,
+  "pixel_acc": 0.8098,
+  "aamo": 0.7476,
+  "params": 3714658,
+  "gflops": 1.692,
+  "fps": 103.36,
+  "ms_per_image": 9.67,
+  "checkpoint_epoch": 11,
+  "checkpoint_val_dice": 0.7941,
+  "n_test": 766,
+  "device": "cuda",
+  "lambda2": 1.0,
+  "att_mode": "mse",
+  "run_tag": "l2_1_mse"
+}

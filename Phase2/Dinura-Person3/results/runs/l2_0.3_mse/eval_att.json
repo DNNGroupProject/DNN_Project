@@ -1,0 +1,22 @@
+{
+  "model": "SegFormer-B0 + Att (lambda2=0.3, mse)",
+  "dice": 0.869,
+  "iou": 0.7684,
+  "f1": 0.869,
+  "precision": 0.83,
+  "recall": 0.9118,
+  "pixel_acc": 0.8324,
+  "aamo": 0.5752,
+  "params": 3714658,
+  "gflops": 1.692,
+  "fps": 100.81,
+  "ms_per_image": 9.92,
+  "checkpoint_epoch": 3,
+  "checkpoint_val_dice": 0.7902,
+  "n_test": 766,
+  "device": "cuda",
+  "lambda2": 0.3,
+  "att_mode": "mse",
+  "run_tag": "l2_0.3_mse",
+  "source": "kalana_default_lambda2"
+}
