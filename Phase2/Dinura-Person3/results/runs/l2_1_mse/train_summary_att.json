@@ -1,0 +1,17 @@
+{
+  "variant": "att",
+  "n_train": 3576,
+  "n_val": 766,
+  "epochs": 20,
+  "batch_size": 1,
+  "lr": 6e-05,
+  "lambda2": 1.0,
+  "att_mode": "mse",
+  "best_val_dice": 0.7941060952202738,
+  "final_val_dice": 0.786697769797291,
+  "final_val_iou": 0.7100644802732455,
+  "wall_clock_s": 7315.7,
+  "device": "cuda",
+  "img_dir": "/content/lambda_sweep/data/images",
+  "output_dir": "/content/drive/MyDrive/lambda_sweep_outputs/results/runs/l2_1_mse"
+}

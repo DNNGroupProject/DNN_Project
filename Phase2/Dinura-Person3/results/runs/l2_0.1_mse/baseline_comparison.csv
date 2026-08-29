@@ -1,0 +1,2 @@
+model,dice,iou,f1,precision,recall,pixel_acc,aamo,params,gflops,fps,ms_per_image
+SegFormer-B0 + Attention Consistency Loss,0.8523,0.7425,0.8523,0.8308,0.8748,0.8151,0.5481,3714658,1.692,79.25,12.62

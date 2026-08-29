@@ -1,5 +1,5 @@
 {
-  "model": "SegFormer-B0 + Att (\u03bb2=0.3, mse)",
+  "model": "SegFormer-B0 + Att (lambda2=0.3, mse)",
   "dice": 0.869,
   "iou": 0.7684,
   "f1": 0.869,
