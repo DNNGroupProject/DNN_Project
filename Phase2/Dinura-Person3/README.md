@@ -9,15 +9,17 @@ Kickoff: `Phase2/Dhinanjaya-Person5/phase2_dinura_kickoff.md`.
 
 | Weeks | Deliverable | Status |
 |---|---|---|
-| 7–9 | λ2 sweep + optional KL comparison at best λ2 | Scaffold + λ2=0.3 MSE seeded from Kalana; remaining cells need Colab GPU |
-| 10 | Support Lasana's ablation / interpret attention results | Ready once winning config is final |
+| 7–9 | λ2 sweep + optional KL comparison at best λ2 | **Complete** — all 4 MSE cells (λ2 ∈ {0.1, 0.3, 0.5, 1.0}) trained and evaluated on the shared 766-image test set. Winner: `l2_1_mse` (λ2=1.0), test AAMO 0.7476 / Dice 0.8577 / IoU 0.7508. Optional KL cell not run. |
+| 10 | Support Lasana's ablation / interpret attention results | Unblocked — `results/winning_config.json` is final; checkpoint handoff to Dhinanjaya/Lasana still pending (`.pt` location undocumented) |
 
 ## How this differs from Kalana's run
 
 Kalana's `Phase2/Kalana-Person2/` run is **one fixed** config (λ2=0.3, σ=8,
-MSE, seed 42) and is already the paper's Table 1 attention row. This folder
-is the **tuning** work: multiple full-scale attention-variant trainings
-across λ2 ∈ {0.1, 0.3, 0.5, 1.0}, then (optional) KL at the best λ2.
+MSE, seed 42); it seeded the λ2=0.3 cell of this sweep. This folder is the
+**tuning** work: multiple full-scale attention-variant trainings across
+λ2 ∈ {0.1, 0.3, 0.5, 1.0}, then (optional) KL at the best λ2. The paper's
+Table 1 attention row is now the sweep winner (λ2=1.0), not Kalana's λ2=0.3
+run.
 
 λ2=0.3 / MSE is **not re-trained** — it is seeded from Kalana's finished
 metrics (`python seed_from_kalana.py`) so the sweep table starts with a
