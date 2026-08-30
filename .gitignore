@@ -15,6 +15,9 @@ docs/
 images/*
 masks/*
 
+# Large sweep output archives
+lambda_sweep_outputs-*.zip
+
 # LaTeX build artifacts
 *.aux
 *.log
