@@ -1,0 +1,6 @@
+model,dice,iou,f1,precision,recall,pixel_acc,aamo,params,gflops,fps,ms_per_image,source,n_seeds,notes
+U-Net (CNN baseline),0.8615,0.7568,0.8615,0.8009,0.9321,0.8174,n/a,31037698,109.48,1.47,680.55,Phase1/Lasana-Person4_Evaluation (Chanupa PyTorch ckpt),1,Full-scale 3576/766/766 seed 42; dataset-wide Dice/IoU.
+SegFormer-B0 (no attention loss),0.8743,0.7766,0.8743,0.8517,0.898,0.8425,0.0334,3714658,1.692,84.52,11.83,Phase2/Kalana-Person2 (full-scale Colab),1,Full-scale 3576/766/766 seed 42; Person 4 metrics/aamo formulas.
+SegFormer-B0 + Attention Consistency Loss (λ2=1.0 MSE),0.8577,0.7508,0.8577,0.7885,0.9402,0.8098,0.7476,3714658,1.692,103.36,9.67,Phase2/Dinura-Person3/results/runs/l2_1_mse,1,"Dinura sweep winner l2_1_mse (λ2=1.0, mse); selection: max test AAMO then max Dice. Supersedes Kalana default-λ2=0.3 attention row."
+SegFormer-B0 + Attention Consistency + Boundary Loss,-,-,-,,,,pending,-,-,-,,pending,0,Blocked until Dhinanjaya wires Boundary Refinement into training.
+DeepLabV3+ (MobileNetV3) — extra baseline,0.7369,0.5834,0.7369,0.592,0.9758,0.6127,n/a,11020594,n/a,8.51,117.52,Phase1/Lasana-Person4_Evaluation (CPU smoke),1,CPU smoke (400 samples / 5 epochs). Multi-seed mean±std for this row is produced by train_deeplab_multiseed.py (seeds 42/43/44).

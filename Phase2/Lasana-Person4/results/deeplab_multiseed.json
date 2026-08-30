@@ -1,0 +1,50 @@
+[
+  {
+    "model": "DeepLabV3+ (MobileNetV3) \u2014 extra baseline",
+    "seed": 42,
+    "dice": 0.7821,
+    "iou": 0.6422,
+    "f1": 0.7821,
+    "precision": 0.6591,
+    "recall": 0.9616,
+    "pixel_acc": 0.6941,
+    "aamo": "n/a",
+    "params": 11020594,
+    "gflops": "n/a",
+    "checkpoint": "C:\\Users\\PCland\\Desktop\\DNN_Project\\Phase1\\Lasana-Person4_Evaluation\\checkpoints\\deeplabv3_mobilenet_best.pt",
+    "max_samples": 400,
+    "status": "ok"
+  },
+  {
+    "model": "DeepLabV3+ (MobileNetV3) \u2014 extra baseline",
+    "seed": 43,
+    "dice": 0.8073,
+    "iou": 0.6769,
+    "f1": 0.8073,
+    "precision": 0.766,
+    "recall": 0.8533,
+    "pixel_acc": 0.7674,
+    "aamo": "n/a",
+    "params": 11020594,
+    "gflops": "n/a",
+    "checkpoint": "C:\\Users\\PCland\\Desktop\\DNN_Project\\Phase2\\Lasana-Person4\\checkpoints\\deeplabv3_mobilenet_seed43_best.pt",
+    "max_samples": 400,
+    "status": "ok"
+  },
+  {
+    "model": "DeepLabV3+ (MobileNetV3) \u2014 extra baseline",
+    "seed": 44,
+    "dice": 0.7693,
+    "iou": 0.6251,
+    "f1": 0.7693,
+    "precision": 0.6489,
+    "recall": 0.9444,
+    "pixel_acc": 0.6765,
+    "aamo": "n/a",
+    "params": 11020594,
+    "gflops": "n/a",
+    "checkpoint": "C:\\Users\\PCland\\Desktop\\DNN_Project\\Phase2\\Lasana-Person4\\checkpoints\\deeplabv3_mobilenet_seed44_best.pt",
+    "max_samples": 400,
+    "status": "ok"
+  }
+]

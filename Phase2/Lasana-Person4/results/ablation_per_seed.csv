@@ -1,0 +1,8 @@
+model,seed,dice,iou,f1,precision,recall,pixel_acc,aamo,params,gflops,status,checkpoint,max_samples
+U-Net (CNN baseline),42,0.8615,0.7568,0.8615,,,,n/a,31037698,109.48,single_seed_full_scale,,
+SegFormer-B0 (no attention loss),42,0.8743,0.7766,0.8743,,,,0.0334,3714658,1.692,single_seed_full_scale,,
+SegFormer-B0 + Attention Consistency Loss (λ2=1.0 MSE),42,0.8577,0.7508,0.8577,,,,0.7476,3714658,1.692,single_seed_full_scale,,
+SegFormer-B0 + Attention Consistency + Boundary Loss,-,-,-,-,,,,pending,-,-,pending_checkpoint,,
+DeepLabV3+ (MobileNetV3) — extra baseline,42,0.7821,0.6422,0.7821,0.6591,0.9616,0.6941,n/a,11020594,n/a,ok,C:\Users\PCland\Desktop\DNN_Project\Phase1\Lasana-Person4_Evaluation\checkpoints\deeplabv3_mobilenet_best.pt,400
+DeepLabV3+ (MobileNetV3) — extra baseline,43,0.8073,0.6769,0.8073,0.766,0.8533,0.7674,n/a,11020594,n/a,ok,C:\Users\PCland\Desktop\DNN_Project\Phase2\Lasana-Person4\checkpoints\deeplabv3_mobilenet_seed43_best.pt,400
+DeepLabV3+ (MobileNetV3) — extra baseline,44,0.7693,0.6251,0.7693,0.6489,0.9444,0.6765,n/a,11020594,n/a,ok,C:\Users\PCland\Desktop\DNN_Project\Phase2\Lasana-Person4\checkpoints\deeplabv3_mobilenet_seed44_best.pt,400

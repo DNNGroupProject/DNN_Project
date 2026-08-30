@@ -1,0 +1,6 @@
+model,n_seeds,dice,iou,f1,aamo,params,gflops
+U-Net (CNN baseline),1,0.8615 ± 0.0000,0.7568 ± 0.0000,0.8615 ± 0.0000,n/a,31037698,109.48
+SegFormer-B0 (no attention loss),1,0.8743 ± 0.0000,0.7766 ± 0.0000,0.8743 ± 0.0000,0.0334 ± 0.0000,3714658,1.692
+SegFormer-B0 + Attention Consistency Loss (λ2=1.0 MSE),1,0.8577 ± 0.0000,0.7508 ± 0.0000,0.8577 ± 0.0000,0.7476 ± 0.0000,3714658,1.692
+SegFormer-B0 + Attention Consistency + Boundary Loss,0,-,-,-,pending,-,-
+DeepLabV3+ (MobileNetV3) — extra baseline,3,0.7862 ± 0.0158,0.6481 ± 0.0216,0.7862 ± 0.0158,n/a,11020594,n/a
