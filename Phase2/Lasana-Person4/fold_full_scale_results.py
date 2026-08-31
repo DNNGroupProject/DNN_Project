@@ -5,8 +5,8 @@ Sources (no model loading — table joins only):
   - U-Net:          Phase1/Lasana-Person4_Evaluation/results/baseline_comparison.csv
   - SegFormer-B0:   Phase2/Kalana-Person2/results/baseline_comparison.csv (vanilla)
   - SegFormer+Att:  Phase2/Dinura-Person3/results/runs/l2_1_mse/  (sweep winner λ2=1.0 MSE)
-  - Boundary Loss:  pending (Dhinanjaya still integrating)
-  - DeepLabV3+:     Phase1/Lasana-Person4_Evaluation/results/baseline_comparison.csv (extra)
+  - Boundary Loss:  pending (Dhinanjaya still integrating) — see TODO below
+  - DeepLabV3+:     results/deeplab_multiseed.json seed-42 entry (single eval path)
 
 Writes:
   results/baseline_comparison_full_scale.csv
@@ -28,6 +28,14 @@ PHASE1_P4 = PROJECT / "Phase1" / "Lasana-Person4_Evaluation" / "results"
 KALANA = PROJECT / "Phase2" / "Kalana-Person2" / "results"
 DINURA_WIN = PROJECT / "Phase2" / "Dinura-Person3" / "results" / "runs" / "l2_1_mse"
 WINNING_CFG = PROJECT / "Phase2" / "Dinura-Person3" / "results" / "winning_config.json"
+DEEPLAB_MULTI = RESULTS / "deeplab_multiseed.json"
+
+# TODO(Person 5 / Dhinanjaya): once Boundary Refinement is wired into
+# SegFormer+L_att training and a baseline_comparison.csv row exists, replace
+# the pending boundary _row(...) below with a real source, e.g.:
+#   BOUNDARY = PROJECT / "Phase2" / "Dhinanjaya-Person5" / "results" / "baseline_comparison.csv"
+#   bound = _find_row(_read_csv_rows(BOUNDARY), "Boundary")
+# (exact path TBD when Dhinanjaya hands off the checkpoint / CSV.)
 
 FIELDS = [
     "model",
@@ -58,6 +66,20 @@ def _find_row(rows: List[Dict[str, str]], substr: str) -> Optional[Dict[str, str
         if substr in (r.get("model") or ""):
             return r
     return None
+
+
+def _deeplab_seed42_row() -> Dict[str, Any]:
+    """Single evaluation path: seed-42 entry from train_deeplab_multiseed.py."""
+    if not DEEPLAB_MULTI.exists():
+        raise FileNotFoundError(
+            f"Missing {DEEPLAB_MULTI}\n"
+            "Run: python train_deeplab_multiseed.py --skip-train"
+        )
+    entries = json.loads(DEEPLAB_MULTI.read_text(encoding="utf-8"))
+    for e in entries:
+        if int(e.get("seed", -1)) == 42:
+            return e
+    raise ValueError(f"No seed=42 entry in {DEEPLAB_MULTI}")
 
 
 def _row(
@@ -97,7 +119,7 @@ def fold() -> List[Dict[str, Any]]:
     unet = _find_row(p4, "U-Net")
     vanilla = _find_row(kalana, "no attention")
     att = _find_row(dinura, "Attention Consistency")
-    deeplab = _find_row(p4, "DeepLab")
+    dl42 = _deeplab_seed42_row()
 
     att_notes = (
         f"Dinura sweep winner {winner_meta.get('run_tag', 'l2_1_mse')} "
@@ -125,6 +147,11 @@ def fold() -> List[Dict[str, Any]]:
             source="Phase2/Dinura-Person3/results/runs/l2_1_mse",
             notes=att_notes,
         ),
+        # TODO(Person 5): replace this pending stub when Boundary Refinement
+        # lands. Expected upstream CSV (path TBD at handoff):
+        #   Phase2/Dhinanjaya-Person5/results/baseline_comparison.csv
+        # Then: bound = _find_row(_read_csv_rows(BOUNDARY), "Boundary")
+        # and drop overrides / n_seeds=0.
         _row(
             "SegFormer-B0 + Attention Consistency + Boundary Loss",
             None,
@@ -143,12 +170,23 @@ def fold() -> List[Dict[str, Any]]:
         ),
         _row(
             "DeepLabV3+ (MobileNetV3) — extra baseline",
-            deeplab,
-            source="Phase1/Lasana-Person4_Evaluation (CPU smoke)",
+            None,
+            source="Phase2/Lasana-Person4/train_deeplab_multiseed.py (seed 42, 400-sample smoke)",
             notes=(
-                "CPU smoke (400 samples / 5 epochs). Multi-seed mean±std for this "
-                "row is produced by train_deeplab_multiseed.py (seeds 42/43/44)."
+                "CPU smoke (400 samples / 5 epochs), seed-42 eval from "
+                "deeplab_multiseed.json. Multi-seed mean±std in ablation_mean_std.md."
             ),
+            overrides={
+                "dice": dl42["dice"],
+                "iou": dl42["iou"],
+                "f1": dl42["f1"],
+                "precision": dl42.get("precision", ""),
+                "recall": dl42.get("recall", ""),
+                "pixel_acc": dl42.get("pixel_acc", ""),
+                "aamo": dl42.get("aamo", "n/a"),
+                "params": dl42.get("params", ""),
+                "gflops": dl42.get("gflops", "n/a"),
+            },
         ),
     ]
     return rows
@@ -168,7 +206,9 @@ def write_tables(rows: List[Dict[str, Any]]) -> None:
         "",
         "Folded from Chanupa (U-Net), Kalana (SegFormer-B0 vanilla), Dinura",
         "(`l2_1_mse` attention winner), and Person 4's DeepLabV3+ extra baseline.",
-        "All full-scale rows share the 3576/766/766 seed-42 held-out test set.",
+        "U-Net / SegFormer / L_att rows share the 3576/766/766 seed-42 test set;",
+        "the DeepLabV3+ row is a 400-sample CPU-smoke subset evaluated by",
+        "`train_deeplab_multiseed.py`.",
         "",
         "| Model | Dice | IoU | F1 | AAMO | Params | GFLOPs | FPS | Source |",
         "|-------|------|-----|----|------|--------|--------|-----|--------|",
@@ -188,8 +228,9 @@ def write_tables(rows: List[Dict[str, Any]]) -> None:
             "(`λ2=1.0`, MSE, run tag `l2_1_mse`: Dice 0.8577 / IoU 0.7508 / "
             "AAMO 0.7476), not Kalana's default-λ2=0.3 attention run.",
             "- Boundary Loss row stays pending until Person 5 finishes integration.",
-            "- DeepLabV3+ is CPU smoke-scale; see `ablation_mean_std.md` for the "
-            "multi-seed (42/43/44) mean±std of that extra baseline.",
+            "- DeepLabV3+ Dice/IoU come from `deeplab_multiseed.json` seed 42 "
+            "(same path as the multi-seed ablation); see `ablation_mean_std.md` "
+            "for seeds 42/43/44 mean±std.",
             "- Phase 1 `Lasana-Person4_Evaluation/results/` is left untouched "
             "(frozen short-paper snapshot per CONTRIBUTING.md).",
             "",

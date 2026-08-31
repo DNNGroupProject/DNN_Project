@@ -11,7 +11,7 @@
     "aamo": "n/a",
     "params": 11020594,
     "gflops": "n/a",
-    "checkpoint": "C:\\Users\\PCland\\Desktop\\DNN_Project\\Phase1\\Lasana-Person4_Evaluation\\checkpoints\\deeplabv3_mobilenet_best.pt",
+    "checkpoint": "Phase1/Lasana-Person4_Evaluation/checkpoints/deeplabv3_mobilenet_best.pt",
     "max_samples": 400,
     "status": "ok"
   },
@@ -27,7 +27,7 @@
     "aamo": "n/a",
     "params": 11020594,
     "gflops": "n/a",
-    "checkpoint": "C:\\Users\\PCland\\Desktop\\DNN_Project\\Phase2\\Lasana-Person4\\checkpoints\\deeplabv3_mobilenet_seed43_best.pt",
+    "checkpoint": "Phase2/Lasana-Person4/checkpoints/deeplabv3_mobilenet_seed43_best.pt",
     "max_samples": 400,
     "status": "ok"
   },
@@ -43,7 +43,7 @@
     "aamo": "n/a",
     "params": 11020594,
     "gflops": "n/a",
-    "checkpoint": "C:\\Users\\PCland\\Desktop\\DNN_Project\\Phase2\\Lasana-Person4\\checkpoints\\deeplabv3_mobilenet_seed44_best.pt",
+    "checkpoint": "Phase2/Lasana-Person4/checkpoints/deeplabv3_mobilenet_seed44_best.pt",
     "max_samples": 400,
     "status": "ok"
   }

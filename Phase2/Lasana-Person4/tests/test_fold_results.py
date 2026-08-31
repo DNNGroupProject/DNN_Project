@@ -47,7 +47,10 @@ class TestFoldFullScale(unittest.TestCase):
     def test_deeplab_row_present(self):
         rows = fold()
         dl = next(r for r in rows if "DeepLab" in r["model"])
-        self.assertNotIn(dl["dice"], ("-", "", None))
+        self.assertAlmostEqual(float(dl["dice"]), 0.7821, places=4)
+        self.assertAlmostEqual(float(dl["iou"]), 0.6422, places=4)
+        self.assertIn("train_deeplab_multiseed", dl["source"])
+        self.assertNotIn("0.7369", str(dl["dice"]))
 
 
 if __name__ == "__main__":

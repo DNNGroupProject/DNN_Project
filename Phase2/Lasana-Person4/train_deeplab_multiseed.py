@@ -46,7 +46,6 @@ if str(PHASE1_P4) not in sys.path:
 import config  # noqa: E402  (Phase1 Person4 config)
 from adapters.data import load_pairs, split_dataset  # noqa: E402
 from adapters.deeplab_model import build_deeplabv3, forest_prob_from_logits  # noqa: E402
-from ablation_runner import aggregate_mean_std  # noqa: E402
 from metrics import ConfusionCounts, binarize, metrics_from_counts  # noqa: E402
 
 SEEDS = [42, 43, 44]
@@ -58,6 +57,46 @@ MAX_SAMPLES = int(os.environ.get("DEEPLAB_MAX_SAMPLES", "400"))
 EPOCHS = int(os.environ.get("DEEPLAB_EPOCHS", "5"))
 BATCH_SIZE = int(os.environ.get("DEEPLAB_BATCH", "2"))
 LR = float(os.environ.get("DEEPLAB_LR", "1e-4"))
+
+
+def aggregate_mean_std(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Sample std (ddof=1) across seeds; bare mean when n<2.
+
+    Local override of Phase1 ablation_runner.aggregate_mean_std (frozen snapshot).
+    Persons 1/2/3 GPU multi-seed reporting must also use ddof=1.
+    """
+    numeric = ["dice", "iou", "f1", "precision", "recall", "pixel_acc"]
+    out: Dict[str, Any] = {"model": rows[0]["model"], "n_seeds": len(rows)}
+
+    def fmt(vals: List[float]) -> str:
+        if not vals:
+            return "n/a"
+        m = float(np.mean(vals))
+        if len(vals) < 2:
+            return f"{m:.4f}"
+        return f"{m:.4f} ± {float(np.std(vals, ddof=1)):.4f}"
+
+    for k in numeric:
+        vals: List[float] = []
+        for r in rows:
+            try:
+                vals.append(float(r[k]))
+            except (TypeError, ValueError, KeyError):
+                pass
+        out[k] = fmt(vals)
+
+    avals: List[float] = []
+    for r in rows:
+        v = r.get("aamo")
+        if v not in (None, "n/a", ""):
+            try:
+                avals.append(float(v))
+            except (TypeError, ValueError):
+                pass
+    out["aamo"] = fmt(avals)
+    out["params"] = rows[0].get("params", "n/a")
+    out["gflops"] = rows[0].get("gflops", "n/a")
+    return out
 
 
 def _to_tensor_images(images: np.ndarray) -> torch.Tensor:
@@ -179,6 +218,11 @@ def evaluate_checkpoint(ckpt_path: Path, seed: int, device: torch.device) -> Dic
     metrics = eval_split(model, X_test, y_test, device, batch_size=BATCH_SIZE)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+    try:
+        ckpt_str = ckpt_path.resolve().relative_to(PROJECT).as_posix()
+    except ValueError:
+        ckpt_str = ckpt_path.name
+
     row = {
         "model": DEEPLAB_LABEL,
         "seed": seed,
@@ -191,7 +235,7 @@ def evaluate_checkpoint(ckpt_path: Path, seed: int, device: torch.device) -> Dic
         "aamo": "n/a",
         "params": n_params,
         "gflops": "n/a",
-        "checkpoint": str(ckpt_path),
+        "checkpoint": ckpt_str,
         "max_samples": MAX_SAMPLES,
         "status": "ok",
     }
@@ -330,10 +374,11 @@ def write_ablation_tables(
     lines = [
         "# Ablation results (mean ± std) — Phase 2 / Lasana-Person4",
         "",
-        "Full-scale rows (U-Net, SegFormer-B0, SegFormer-B0+L_att λ2=1.0) are",
-        "single-seed (seed 42) pending additional GPU-trained seeds from",
-        "Person 1/2/3. DeepLabV3+ extra baseline has genuine 3-seed mean±std",
-        "(seeds 42/43/44, CPU smoke: 400 samples / 5 epochs).",
+        "Std is **sample** standard deviation (ddof=1). Single-seed rows",
+        "(U-Net, SegFormer-B0, SegFormer-B0+L_att λ2=1.0) show the bare value",
+        "pending additional GPU-trained seeds from Person 1/2/3. DeepLabV3+",
+        "extra baseline has genuine 3-seed mean±std (seeds 42/43/44, CPU smoke:",
+        "400 samples / 5 epochs).",
         "",
         "| Model | Seeds | Dice | IoU | F1 | AAMO |",
         "|-------|-------|------|-----|----|------|",
@@ -354,6 +399,7 @@ def write_ablation_tables(
             "  the multi-seed aggregation pipeline Person 4 owns.",
             "- U-Net / SegFormer full-scale checkpoints live on Drive (not in git);",
             "  re-running extra seeds requires Colab GPU access from teammates.",
+            "- Teammate GPU multi-seed reporting must also use sample std (ddof=1).",
             "",
         ]
     )

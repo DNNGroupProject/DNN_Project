@@ -30,7 +30,9 @@ Phase2/Lasana-Person4/
 
 Phase 1 code under `Phase1/Lasana-Person4_Evaluation/` is a **frozen short-paper
 snapshot** (CONTRIBUTING.md). This Phase 2 folder imports its metrics /
-adapters / `aggregate_mean_std` via `sys.path` and does not edit those files.
+adapters via `sys.path` and does not edit those files. Multi-seed aggregation
+uses a local `aggregate_mean_std` (sample std, ddof=1) rather than the Phase 1
+helper.
 
 ## Quick start / Reproducing
 
@@ -65,7 +67,8 @@ Smoke defaults (override with env vars): `DEEPLAB_MAX_SAMPLES=400`,
 
 ## Results
 
-Full-scale table (shared 3576/766/766 seed-42 test set):
+U-Net / SegFormer / L_att rows share the 3576/766/766 seed-42 test set; DeepLabV3+
+is a 400-sample CPU-smoke subset (seed-42 Dice 0.7821 from `deeplab_multiseed.json`).
 
 | Model | Dice | IoU | AAMO | Seeds |
 |---|---|---|---|---|
@@ -73,7 +76,7 @@ Full-scale table (shared 3576/766/766 seed-42 test set):
 | SegFormer-B0 (no attention loss) | 0.8743 | 0.7766 | 0.0334 | 1 |
 | SegFormer-B0 + Attention Consistency (λ2=1.0 MSE) | 0.8577 | 0.7508 | 0.7476 | 1 |
 | SegFormer-B0 + Attention + Boundary Loss | — | — | pending | 0 |
-| DeepLabV3+ (MobileNetV3) — extra baseline | 0.7862 ± 0.0158 | 0.6481 ± 0.0216 | n/a | 3 |
+| DeepLabV3+ (MobileNetV3) — extra baseline | 0.7862 ± 0.0193 | 0.6481 ± 0.0264 | n/a | 3 |
 
 Selection rule for the attention row (Dinura): max test AAMO, then max Dice.
 Winner run tag `l2_1_mse` supersedes Kalana's default-λ2=0.3 attention numbers.
