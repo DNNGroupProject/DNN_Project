@@ -3,17 +3,29 @@
 Copied from Phase2/Kalana-Person2/train_full_scale.py (same train_variant /
 Attention Consistency Loss path). Writes under this folder's paths.CKPT_DIR /
 RESULTS_DIR — run_lambda_sweep.py points those at one sweep cell per pass.
+
+Boundary Loss (Person 5, Week 10 stretch task) is wired in as an opt-in
+`--lambda3` flag, default 0.0 — with lambda3=0.0 (the default used by every
+existing sweep call, including run_lambda_sweep.py's SweepArgs shim, which
+carries no lambda3/boundary_kernel attribute at all) this file's behavior
+and output CSV schema are unchanged.
 """
 from __future__ import annotations
 
 import argparse
 import csv
 import json
+import sys
 import time
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+
+PERSON5_DIR = Path(__file__).resolve().parents[1] / "Dhinanjaya-Person5"
+if str(PERSON5_DIR) not in sys.path:
+    sys.path.insert(0, str(PERSON5_DIR))
+from boundary_refinement.loss import BoundaryDiceLoss  # noqa: E402
 
 from paths import (
     ATT_MODE,
@@ -107,9 +119,11 @@ def run_epoch_vanilla(model, images, masks, batch_size, opt=None):
     return tot_loss / n_batches, tot_dice / n_batches, tot_iou / n_batches
 
 
-def run_epoch_attention(model, images, masks, opt, att_loss_fn, lambda2, is_train):
+def run_epoch_attention(
+    model, images, masks, opt, att_loss_fn, lambda2, is_train, boundary_loss_fn=None, lambda3=0.0
+):
     model.train()  # Grad-Rollout needs a live graph even in "eval" mode
-    tot_loss = tot_dice = tot_iou = tot_att = 0.0
+    tot_loss = tot_dice = tot_iou = tot_att = tot_bnd = 0.0
     n = len(images)
     for i in range(n):  # batch size 1 — see Person 3 rollout.py's batch-size-1 constraint
         x, y = _to_input(images[i : i + 1]), torch.from_numpy(masks[i : i + 1]).to(DEVICE)
@@ -121,6 +135,10 @@ def run_epoch_attention(model, images, masks, opt, att_loss_fn, lambda2, is_trai
         l_dice, l_bce = dice_bce(probs, y)
         l_att = att_loss_fn(attn_map, y[0])
         loss = l_dice + 1.0 * l_bce + lambda2 * l_att
+        if boundary_loss_fn is not None:
+            l_bnd = boundary_loss_fn(probs, y)  # probs, y both (1,256,256): soft P, binary Y
+            loss = loss + lambda3 * l_bnd
+            tot_bnd += l_bnd.item()
         if is_train:
             loss.backward()
             opt.step()
@@ -129,7 +147,7 @@ def run_epoch_attention(model, images, masks, opt, att_loss_fn, lambda2, is_trai
         tot_dice += dice
         tot_iou += iou
         tot_att += l_att.item()
-    return tot_loss / n, tot_dice / n, tot_iou / n, tot_att / n
+    return tot_loss / n, tot_dice / n, tot_iou / n, tot_att / n, tot_bnd / n
 
 
 def train_variant(variant: str, args) -> None:
@@ -143,11 +161,17 @@ def train_variant(variant: str, args) -> None:
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr)
     att_loss_fn = AttentionConsistencyLoss(mode=args.att_mode, sigma=args.sigma)
 
+    lambda3 = float(getattr(args, "lambda3", 0.0))
+    boundary_kernel = int(getattr(args, "boundary_kernel", 3))
+    boundary_loss_fn = BoundaryDiceLoss(kernel_size=boundary_kernel) if lambda3 > 0 else None
+
     ensure_output_dirs()
     log_path = paths.RESULTS_DIR / f"training_log_{variant}.csv"
     fieldnames = ["epoch", "train_loss", "train_dice", "train_iou", "val_loss", "val_dice", "val_iou"]
     if variant == "att":
         fieldnames += ["train_l_att", "val_l_att"]
+        if boundary_loss_fn is not None:
+            fieldnames += ["train_l_boundary", "val_l_boundary"]
 
     best_val_dice = -1.0
     rows = []
@@ -169,11 +193,13 @@ def train_variant(variant: str, args) -> None:
                 val_iou=val_iou,
             )
         else:
-            tr_loss, tr_dice, tr_iou, tr_att = run_epoch_attention(
-                model, train_imgs, train_masks, opt, att_loss_fn, args.lambda2, is_train=True
+            tr_loss, tr_dice, tr_iou, tr_att, tr_bnd = run_epoch_attention(
+                model, train_imgs, train_masks, opt, att_loss_fn, args.lambda2, is_train=True,
+                boundary_loss_fn=boundary_loss_fn, lambda3=lambda3,
             )
-            val_loss, val_dice, val_iou, val_att = run_epoch_attention(
-                model, val_imgs, val_masks, opt, att_loss_fn, args.lambda2, is_train=False
+            val_loss, val_dice, val_iou, val_att, val_bnd = run_epoch_attention(
+                model, val_imgs, val_masks, opt, att_loss_fn, args.lambda2, is_train=False,
+                boundary_loss_fn=boundary_loss_fn, lambda3=lambda3,
             )
             row = dict(
                 epoch=epoch,
@@ -186,6 +212,9 @@ def train_variant(variant: str, args) -> None:
                 train_l_att=tr_att,
                 val_l_att=val_att,
             )
+            if boundary_loss_fn is not None:
+                row["train_l_boundary"] = tr_bnd
+                row["val_l_boundary"] = val_bnd
         rows.append(row)
         dt = time.time() - t0
         print(
@@ -229,6 +258,8 @@ def train_variant(variant: str, args) -> None:
         "lr": args.lr,
         "lambda2": args.lambda2 if variant == "att" else None,
         "att_mode": args.att_mode if variant == "att" else None,
+        "lambda3": lambda3 if variant == "att" and boundary_loss_fn is not None else None,
+        "boundary_kernel": boundary_kernel if variant == "att" and boundary_loss_fn is not None else None,
         "best_val_dice": best_val_dice,
         "final_val_dice": val_dice,
         "final_val_iou": val_iou,
@@ -257,6 +288,11 @@ def parse_args():
     p.add_argument("--lambda2", type=float, default=LAMBDA2)
     p.add_argument("--sigma", type=float, default=SIGMA)
     p.add_argument("--att-mode", default=ATT_MODE, choices=["mse", "kl"])
+    p.add_argument(
+        "--lambda3", type=float, default=0.0,
+        help="Boundary Dice Loss weight (Person 5, Week 10). 0.0 (default) disables it entirely.",
+    )
+    p.add_argument("--boundary-kernel", type=int, default=3, help="Odd structuring-element size for L_boundary.")
     p.add_argument("--seed", type=int, default=SEED)
     p.add_argument("--img-dir", type=Path, default=None)
     p.add_argument("--mask-dir", type=Path, default=None)
@@ -266,6 +302,10 @@ def parse_args():
 def main():
     args = parse_args()
     apply_data_dirs(args.img_dir or paths.DATA_IMG_DIR, args.mask_dir or paths.DATA_MASK_DIR)
+    if args.variant in ("att", "both") and args.lambda3 > 0:
+        tag = f"{paths.run_tag(args.lambda2, args.att_mode)}_bnd{args.lambda3:g}"
+        paths.set_output_dirs(paths.OUTPUT_ROOT_CKPT / "runs" / tag, paths.OUTPUT_ROOT_RESULTS / "runs" / tag)
+        print(f"Boundary Loss active (λ3={args.lambda3:g}) — writing to runs/{tag}/")
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
