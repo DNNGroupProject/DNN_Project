@@ -8,7 +8,11 @@ Boundary Loss (Person 5, Week 10 stretch task) is wired in as an opt-in
 `--lambda3` flag, default 0.0 — with lambda3=0.0 (the default used by every
 existing sweep call, including run_lambda_sweep.py's SweepArgs shim, which
 carries no lambda3/boundary_kernel attribute at all) this file's behavior
-and output CSV schema are unchanged.
+and output CSV schema are unchanged. The `boundary_refinement` package is
+imported lazily (only when lambda3>0, inside train_variant) so this module
+still imports fine in an environment/Colab bundle that doesn't have it —
+e.g. Dinura's existing flat `lambda_sweep.zip` layout (make_colab_zip.py),
+which has no `Dhinanjaya-Person5/` at all.
 """
 from __future__ import annotations
 
@@ -21,11 +25,6 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-
-PERSON5_DIR = Path(__file__).resolve().parents[1] / "Dhinanjaya-Person5"
-if str(PERSON5_DIR) not in sys.path:
-    sys.path.insert(0, str(PERSON5_DIR))
-from boundary_refinement.loss import BoundaryDiceLoss  # noqa: E402
 
 from paths import (
     ATT_MODE,
@@ -56,6 +55,29 @@ from attention_consistency.data import load_pairs, make_splits, to_model_input  
 from attention_consistency.segformer_model import forest_prob  # noqa: E402
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _load_boundary_dice_loss_cls():
+    """Locate & import boundary_refinement.loss.BoundaryDiceLoss.
+
+    Tries both layouts: the real repo checkout (Phase2/Dhinanjaya-Person5/,
+    a sibling of this file's Phase2/Dinura-Person3/) and a flat Colab
+    bundle with boundary_refinement/ dropped alongside vendor/ (see
+    Phase2/Dhinanjaya-Person5/make_boundary_colab_zip.py).
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in (here.parent / "Dhinanjaya-Person5", here):
+        if (candidate / "boundary_refinement" / "loss.py").is_file():
+            if str(candidate) not in sys.path:
+                sys.path.insert(0, str(candidate))
+            from boundary_refinement.loss import BoundaryDiceLoss
+
+            return BoundaryDiceLoss
+    raise FileNotFoundError(
+        "boundary_refinement package not found (needed for --lambda3 > 0). "
+        f"Expected either {here.parent / 'Dhinanjaya-Person5'} (full repo checkout) "
+        f"or {here / 'boundary_refinement'} (Colab bundle)."
+    )
 
 
 def _to_input(images):
@@ -163,7 +185,10 @@ def train_variant(variant: str, args) -> None:
 
     lambda3 = float(getattr(args, "lambda3", 0.0))
     boundary_kernel = int(getattr(args, "boundary_kernel", 3))
-    boundary_loss_fn = BoundaryDiceLoss(kernel_size=boundary_kernel) if lambda3 > 0 else None
+    boundary_loss_fn = None
+    if lambda3 > 0:
+        BoundaryDiceLoss = _load_boundary_dice_loss_cls()
+        boundary_loss_fn = BoundaryDiceLoss(kernel_size=boundary_kernel)
 
     ensure_output_dirs()
     log_path = paths.RESULTS_DIR / f"training_log_{variant}.csv"

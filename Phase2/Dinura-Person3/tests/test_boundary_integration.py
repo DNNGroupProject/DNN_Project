@@ -24,6 +24,13 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 import train_full_scale as T  # noqa: E402
+
+# train_full_scale.py imports boundary_refinement lazily (only when
+# lambda3>0, via _load_boundary_dice_loss_cls) so this test's own import
+# needs to add Dhinanjaya-Person5/ to sys.path itself.
+PERSON5_DIR = HERE.parent / "Dhinanjaya-Person5"
+if str(PERSON5_DIR) not in sys.path:
+    sys.path.insert(0, str(PERSON5_DIR))
 from boundary_refinement.loss import BoundaryDiceLoss  # noqa: E402
 
 
