@@ -474,7 +474,18 @@ restriction.}
 Restricting Gradient-weighted Attention Rollout to SegFormer's stage-4
 attention avoids the invalid rectangular-matrix case but discards
 information from stages 1--3, which this work does not yet quantify the
-cost of.
+cost of. (5) \emph{Boundary loss / attention interaction.} A preliminary
+Phase 2 sweep of the boundary-refinement loss weight $\lambda_3 \in
+\{0.1, 0.2, 0.5\}$ (fixed at the $\lambda_2{=}1.0$ winner) finds AAMO drops
+non-monotonically as $\lambda_3$ increases (0.7775, 0.6218, 0.6805 against
+the $\lambda_3{=}0$ baseline's 0.7476) even as test Dice improves (up to
+0.8669 at $\lambda_3{=}0.2$). Best-validation checkpoints for
+$\lambda_3{\ge}0.2$ are selected far earlier in training (epoch 4) than the
+$\lambda_3{\in}\{0,0.1\}$ runs (epoch 11), consistent with $L_{boundary}$'s
+gradient --- which flows through the same shared encoder that produces the
+attention maps --- competing with $L_{att}$ for representation capacity;
+this is single-seed evidence at batch size 1 and not yet disentangled from
+checkpoint-selection noise.
 
 \textbf{Broader impact.} Forest-cover monitoring increasingly informs
 deforestation-tracking and conservation-policy decisions, where an
