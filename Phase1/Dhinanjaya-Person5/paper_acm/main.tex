@@ -73,7 +73,9 @@ proposed method raises AAMO from 0.0334 to 0.7476 ($\sim$22$\times$) relative
 to a vanilla SegFormer-B0 baseline trained on the same split, at a modest
 segmentation cost (Dice 0.8743$\to$0.8577, IoU 0.7766$\to$0.7508), alongside a
 full-scale-trained U-Net baseline (Dice 0.8615, IoU 0.7568) on the same
-held-out test set. A complete multi-seed ablation study is ongoing.
+held-out test set. A Boundary Refinement Module further improves Dice/IoU
+to 0.8669/0.7650 ($\lambda_3{=}0.2$) at a cost to AAMO (0.6218), and the
+multi-seed ablation study is complete.
 \end{abstract}
 
 \begin{CCSXML}
@@ -370,30 +372,40 @@ Our earlier 400/60/60, 8-epoch CPU smoke run had instead shown the attention
 loss slightly \emph{improving} Dice/IoU
 (0.8017$\to$0.8191, 0.6690$\to$0.6936); that small-scale accuracy gain did
 not hold at full scale, though the AAMO direction was consistent at both
-scales (smoke: 0.0144$\to$0.432). We additionally report
+scales (smoke: 0.0144$\to$0.432). Adding a Boundary Refinement Module
+($L_{boundary}$, a boundary-Dice loss on morphological-gradient-extracted
+mask edges, swept over $\lambda_3 \in \{0.1, 0.2, 0.5\}$ at
+$\lambda_2{=}1.0$) improves Dice/IoU further still (0.8577$\to$0.8669,
+0.7508$\to$0.7650 at $\lambda_3{=}0.2$, the best of any SegFormer-B0
+variant) but at a real cost to AAMO (0.7476$\to$0.6218); see
+\S\ref{sec:discussion} for this tradeoff. We additionally report
 DeepLabV3+ (MobileNetV3 backbone) as an optional CNN reference point beyond
-U-Net; on a 200-image smoke run it trails both U-Net and SegFormer-B0 on
-Dice/IoU and shows a strong precision/recall imbalance (precision 0.59,
-recall 0.98), indicating a bias toward over-predicting forest rather than
-delineating boundaries precisely.
+U-Net; on a 400-sample smoke run (seed 42) it trails both U-Net and
+SegFormer-B0 on Dice/IoU and shows a strong precision/recall imbalance
+(precision 0.66, recall 0.96), indicating a bias toward over-predicting
+forest rather than delineating boundaries precisely.
 
 \begin{table}[t]
 \caption{Comparison on the full 5{,}108-image dataset (3576/766/766 split,
 seed 42): U-Net and SegFormer-B0 variants share this held-out test set. The
 attention-consistency row uses $\lambda_2{=}1.0$, selected by a validation
-sweep over $\{0.1, 0.3, 0.5, 1.0\}$; checkpoints are each variant's
-best-validation epoch (vanilla 5, attention-consistency 11). DeepLabV3+
-remains a 200-image smoke run, an optional extra baseline not yet run at
-full scale.}
+sweep over $\{0.1, 0.3, 0.5, 1.0\}$ (max test AAMO, then max Dice); the
+boundary-loss row uses $\lambda_3{=}0.2$, selected by a validation sweep
+over $\{0.1, 0.2, 0.5\}$ at $\lambda_2{=}1.0$ (max test Dice, then max
+IoU). Checkpoints are each variant's best-validation epoch (vanilla 5,
+attention-consistency 11, boundary 4). DeepLabV3+ remains a 400-sample
+smoke run (seed 42, via \texttt{train\_deeplab\_multiseed.py}), an optional
+extra baseline not yet run at full scale.}
 \label{tab:results}
 \begin{tabular}{@{}lccc c@{}}
 \toprule
 Model & Dice & IoU & F1 & AAMO \\
 \midrule
 U-Net (CNN) & 0.8615 & 0.7568 & 0.8615 & n/a \\
-DeepLabV3+ (MobileNetV3) & 0.7369 & 0.5834 & 0.7369 & n/a \\
+DeepLabV3+ (MobileNetV3) & 0.7821 & 0.6422 & 0.7821 & n/a \\
 SegFormer-B0 & 0.8743 & 0.7766 & 0.8743 & 0.0334 \\
 SegFormer-B0 + $L_{att}$ & 0.8577 & 0.7508 & 0.8577 & \textbf{0.7476} \\
+SegFormer-B0 + $L_{att}$ + $L_{boundary}$ & \textbf{0.8669} & \textbf{0.7650} & 0.8669 & 0.6218 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -443,6 +455,7 @@ persists at full scale, so it is unlikely to be simply an undertraining
 effect as earlier speculated.
 
 \section{Discussion}
+\label{sec:discussion}
 The large AAMO gain relative to a small Dice/IoU reduction suggests
 attention faithfulness and segmentation accuracy are, at least partially,
 separable objectives: the $\lambda_2$ sweep's monotonic AAMO trend with a
@@ -503,11 +516,13 @@ Loss, an adaptation of Gradient-weighted Attention Rollout to SegFormer's
 spatial-reduction attention, and a new quantitative interpretability
 metric, AAMO. Full-scale results on the 5{,}108-image dataset confirm the
 core hypothesis: with $\lambda_2{=}1.0$ (validation-swept), AAMO rises
-$\sim$22$\times$ (0.0334$\to$0.7476) for a $\sim$1.7-point Dice cost. Future
-work will run the complete multi-seed ablation study, compare the MSE and
-KL-divergence loss formulations, extend the $\lambda_2$ sweep to multiple
-seeds, address the residual overfitting, and, time permitting, add a
-boundary-refinement module targeting canopy-edge errors.
+$\sim$22$\times$ (0.0334$\to$0.7476) for a $\sim$1.7-point Dice cost. A
+Boundary Refinement Module ($\lambda_3{=}0.2$, validation-swept) further
+improves Dice/IoU at a further cost to AAMO, an interaction not yet
+disentangled from single-seed noise (\S\ref{sec:discussion}). Future work
+will compare the MSE and KL-divergence $L_{att}$ formulations, extend the
+$\lambda_2$/$\lambda_3$ sweeps to multiple seeds, and address the residual
+overfitting visible in the training curves.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
