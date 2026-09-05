@@ -46,12 +46,33 @@ answering "does MSE vs KL change anything" for the first time. The other
 (vanilla, attention-MSE, boundary), giving real mean±std instead of a bare
 single-run number.
 
-## After your job finishes
+## After your job finishes — exactly what to send back
 
-Send the output folder back — don't try to merge results into the repo
-yourself. Once all 7 are back, Dhinanjaya will fold them into
-`ablation_mean_std.md` (extending Lasana's existing multi-seed aggregation
-pattern) and a new KL-vs-MSE comparison table, then update the paper.
+Don't try to merge results into the repo yourself — just send the files.
+Easiest is to zip your whole `MyDrive/multiseed_outputs_<OUTPUT_TAG>/`
+folder and share it (Drive link or direct send); if you'd rather send
+individual files, here's what's actually in there and what matters:
+
+| File | Size | Needed? |
+|------|------|---------|
+| `checkpoints/segformer_b0_<variant>_best.pt` | ~15 MB | **Yes** — the trained model, needed for any follow-up eval/figures |
+| `checkpoints/segformer_b0_<variant>_last.pt` | ~15 MB | Send if easy, not critical (final-epoch checkpoint, best.pt is the one actually used) |
+| `results/train_summary_<variant>.json` | <1 KB | **Yes** — hyperparams + final/best val Dice, needed for aggregation |
+| `results/training_log_<variant>.csv` | few KB | **Yes** — per-epoch train/val curve, needed to check for overfitting same way we already did for the seed-42 runs |
+| `results/eval_<variant>.json` | <1 KB | **Yes** — the actual test-set Dice/IoU/F1/AAMO numbers, this is the main thing that goes into the paper |
+| `results/baseline_comparison.csv` | <1 KB | **Yes** — same numbers as eval json, in table-row form, easiest to fold into the aggregate table |
+| `results/baseline_comparison.md` | <1 KB | Nice to have, redundant with the csv |
+| `results/prediction_grid_<variant>.png` | few hundred KB | Nice to have, visual only, not needed for the numbers |
+
+(`<variant>` is `vanilla` or `att` depending on your job.) The **checkpoint
++ the 4 "Yes" files** is everything actually needed to fold your result
+into the paper — if bandwidth/time is tight and you have to pick, send
+those over the last 3 "nice to have" ones. But sending the whole folder
+as one zip is simplest and avoids picking the wrong thing.
+
+Once all 7 are back, Dhinanjaya will fold them into `ablation_mean_std.md`
+(extending Lasana's existing multi-seed aggregation pattern) and a new
+KL-vs-MSE comparison table, then update the paper.
 
 ## Notes
 
