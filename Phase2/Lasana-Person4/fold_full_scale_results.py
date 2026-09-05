@@ -5,7 +5,7 @@ Sources (no model loading — table joins only):
   - U-Net:          Phase1/Lasana-Person4_Evaluation/results/baseline_comparison.csv
   - SegFormer-B0:   Phase2/Kalana-Person2/results/baseline_comparison.csv (vanilla)
   - SegFormer+Att:  Phase2/Dinura-Person3/results/runs/l2_1_mse/  (sweep winner λ2=1.0 MSE)
-  - Boundary Loss:  pending (Dhinanjaya still integrating) — see TODO below
+  - Boundary Loss:  Phase2/Dhinanjaya-Person5/results/baseline_comparison.csv (λ2=1.0, λ3=0.2 sweep winner)
   - DeepLabV3+:     results/deeplab_multiseed.json seed-42 entry (single eval path)
 
 Writes:
@@ -30,12 +30,7 @@ DINURA_WIN = PROJECT / "Phase2" / "Dinura-Person3" / "results" / "runs" / "l2_1_
 WINNING_CFG = PROJECT / "Phase2" / "Dinura-Person3" / "results" / "winning_config.json"
 DEEPLAB_MULTI = RESULTS / "deeplab_multiseed.json"
 
-# TODO(Person 5 / Dhinanjaya): once Boundary Refinement is wired into
-# SegFormer+L_att training and a baseline_comparison.csv row exists, replace
-# the pending boundary _row(...) below with a real source, e.g.:
-#   BOUNDARY = PROJECT / "Phase2" / "Dhinanjaya-Person5" / "results" / "baseline_comparison.csv"
-#   bound = _find_row(_read_csv_rows(BOUNDARY), "Boundary")
-# (exact path TBD when Dhinanjaya hands off the checkpoint / CSV.)
+BOUNDARY = PROJECT / "Phase2" / "Dhinanjaya-Person5" / "results" / "baseline_comparison.csv"
 
 FIELDS = [
     "model",
@@ -111,6 +106,7 @@ def fold() -> List[Dict[str, Any]]:
     p4 = _read_csv_rows(PHASE1_P4 / "baseline_comparison.csv")
     kalana = _read_csv_rows(KALANA / "baseline_comparison.csv")
     dinura = _read_csv_rows(DINURA_WIN / "baseline_comparison.csv")
+    boundary = _read_csv_rows(BOUNDARY)
 
     winner_meta = {}
     if WINNING_CFG.exists():
@@ -119,6 +115,7 @@ def fold() -> List[Dict[str, Any]]:
     unet = _find_row(p4, "U-Net")
     vanilla = _find_row(kalana, "no attention")
     att = _find_row(dinura, "Attention Consistency")
+    bound = _find_row(boundary, "Boundary")
     dl42 = _deeplab_seed42_row()
 
     att_notes = (
@@ -147,26 +144,17 @@ def fold() -> List[Dict[str, Any]]:
             source="Phase2/Dinura-Person3/results/runs/l2_1_mse",
             notes=att_notes,
         ),
-        # TODO(Person 5): replace this pending stub when Boundary Refinement
-        # lands. Expected upstream CSV (path TBD at handoff):
-        #   Phase2/Dhinanjaya-Person5/results/baseline_comparison.csv
-        # Then: bound = _find_row(_read_csv_rows(BOUNDARY), "Boundary")
-        # and drop overrides / n_seeds=0.
         _row(
             "SegFormer-B0 + Attention Consistency + Boundary Loss",
-            None,
-            source="pending",
-            n_seeds=0,
-            notes="Blocked until Dhinanjaya wires Boundary Refinement into training.",
-            overrides={
-                "dice": "-",
-                "iou": "-",
-                "f1": "-",
-                "aamo": "pending",
-                "params": "-",
-                "gflops": "-",
-                "fps": "-",
-            },
+            bound,
+            source="Phase2/Dhinanjaya-Person5/results/baseline_comparison.csv "
+            "(run l2_1_mse_bnd0.2)",
+            notes=(
+                "λ3-sweep winner (λ2=1.0 MSE, λ3=0.2, boundary_kernel=3); "
+                "selection: max test Dice then max test IoU. AAMO 0.6218 vs "
+                "0.7476 for the λ3=0 attention row — see "
+                "Phase2/Dhinanjaya-Person5/results/baseline_comparison.md."
+            ),
         ),
         _row(
             "DeepLabV3+ (MobileNetV3) — extra baseline",
@@ -227,7 +215,9 @@ def write_tables(rows: List[Dict[str, Any]]) -> None:
             "- Attention-consistency row uses Dinura's sweep winner "
             "(`λ2=1.0`, MSE, run tag `l2_1_mse`: Dice 0.8577 / IoU 0.7508 / "
             "AAMO 0.7476), not Kalana's default-λ2=0.3 attention run.",
-            "- Boundary Loss row stays pending until Person 5 finishes integration.",
+            "- Boundary Loss row is the λ3-sweep winner (λ2=1.0 MSE, λ3=0.2) "
+            "from Phase2/Dhinanjaya-Person5/results/; note its AAMO (0.6218) "
+            "drops vs. the plain attention row's 0.7476.",
             "- DeepLabV3+ Dice/IoU come from `deeplab_multiseed.json` seed 42 "
             "(same path as the multi-seed ablation); see `ablation_mean_std.md` "
             "for seeds 42/43/44 mean±std.",

@@ -1,0 +1,21 @@
+{
+  "winner": {
+    "run_tag": "l2_1_mse_bnd0.2",
+    "lambda2": 1.0,
+    "att_mode": "mse",
+    "lambda3": 0.2,
+    "best_val_dice": 0.7924040082406585,
+    "final_val_dice": 0.7890655838888283,
+    "final_val_iou": 0.7113547498288546,
+    "final_val_l_boundary": 0.9612182498600713,
+    "wall_clock_s": 7370.7,
+    "test_dice": 0.8669,
+    "test_iou": 0.765,
+    "test_aamo": 0.6218,
+    "checkpoint_epoch": 4,
+    "status": "complete"
+  },
+  "n_cells": 3,
+  "n_complete": 3,
+  "selection_rule": "max test Dice, then max test IoU (boundary quality, not AAMO)"
+}

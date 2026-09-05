@@ -38,11 +38,13 @@ class TestFoldFullScale(unittest.TestCase):
         self.assertAlmostEqual(float(att["aamo"]), 0.7476, places=4)
         self.assertIn("l2_1_mse", att["source"] + att["notes"])
 
-    def test_boundary_row_pending(self):
+    def test_boundary_row_is_lambda3_sweep_winner(self):
         rows = fold()
         bound = next(r for r in rows if "Boundary" in r["model"])
-        self.assertEqual(bound["aamo"], "pending")
-        self.assertEqual(bound["n_seeds"], 0)
+        self.assertAlmostEqual(float(bound["dice"]), 0.8669, places=4)
+        self.assertAlmostEqual(float(bound["iou"]), 0.765, places=4)
+        self.assertAlmostEqual(float(bound["aamo"]), 0.6218, places=4)
+        self.assertIn("Dhinanjaya-Person5", bound["source"])
 
     def test_deeplab_row_present(self):
         rows = fold()

@@ -1,0 +1,19 @@
+{
+  "variant": "att",
+  "n_train": 3576,
+  "n_val": 766,
+  "epochs": 20,
+  "batch_size": 1,
+  "lr": 6e-05,
+  "lambda2": 1.0,
+  "att_mode": "mse",
+  "lambda3": 0.5,
+  "boundary_kernel": 3,
+  "best_val_dice": 0.7943649966593267,
+  "final_val_dice": 0.7888493631921029,
+  "final_val_iou": 0.7138576964648482,
+  "wall_clock_s": 7271.7,
+  "device": "cuda",
+  "img_dir": "/content/boundary_sweep/data/images",
+  "output_dir": "/content/drive/MyDrive/boundary_sweep_outputs/results/runs/l2_1_mse_bnd0.5"
+}

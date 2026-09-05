@@ -1,0 +1,2 @@
+model,dice,iou,f1,precision,recall,pixel_acc,aamo,params,gflops,fps,ms_per_image
+SegFormer-B0 + Attention Consistency + Boundary Loss,0.8669,0.765,0.8669,0.8085,0.9343,0.825,0.6218,3714658,1.692,113.23,8.83

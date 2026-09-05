@@ -1,0 +1,22 @@
+{
+  "model": "SegFormer-B0 + Att + Boundary (\u03bb2=1, \u03bb3=0.2, mse)",
+  "dice": 0.8669,
+  "iou": 0.765,
+  "f1": 0.8669,
+  "precision": 0.8085,
+  "recall": 0.9343,
+  "pixel_acc": 0.825,
+  "aamo": 0.6218,
+  "params": 3714658,
+  "gflops": 1.692,
+  "fps": 113.23,
+  "ms_per_image": 8.83,
+  "checkpoint_epoch": 4,
+  "checkpoint_val_dice": 0.7924,
+  "n_test": 766,
+  "device": "cuda",
+  "lambda2": 1.0,
+  "att_mode": "mse",
+  "lambda3": 0.2,
+  "run_tag": "l2_1_mse_bnd0.2"
+}
