@@ -257,6 +257,19 @@ generally.
 - **Unresolved:** the U-Net row above conflates two different models — see
   the status note at the top of this file and
   `unet_baseline_reconciliation.md`.
+- **New 2026-09-05 (not yet reconciled into the table above):** the
+  Boundary Loss row's "pending" status is now stale — Phase 2's full-scale
+  λ3 sweep (λ3 ∈ {0.1, 0.2, 0.5}, fixed at λ2=1.0) completed on GPU. Winner
+  λ3=0.2 reaches test Dice 0.8669/IoU 0.7650, but AAMO drops
+  non-monotonically (0.7775, 0.6218, 0.6805 vs. the λ3=0 baseline's 0.7476),
+  and best-validation checkpoints for λ3≥0.2 land far earlier in training
+  (epoch 4 vs. epoch 11 for λ3∈{0,0.1}) — consistent with L_boundary's
+  gradient competing with L_att for shared-encoder representation capacity.
+  Single-seed, batch-size-1 evidence only. Full numbers:
+  `Phase2/Dhinanjaya-Person5/results/boundary_sweep_comparison.md`; already
+  written up as Threats-to-Validity item (5) in `paper_acm/main.tex` — this
+  file's Results table and Boundary Loss row still need the full-scale
+  update to match (tracked below, not done this session).
 
 ## 6. Expected Contributions
 
@@ -318,6 +331,9 @@ Semantic Segmentation and Depth Estimation," *arXiv:2403.06621*, 2024.
 - [ ] Circulate to Persons 1–4 for co-author review of their sections (§6.1.2 of the proposal).
 - [ ] Resolve the U-Net baseline conflation (`unet_baseline_reconciliation.md`) — blocked on Chanupa (checkpoint export) and Lasana (adapter + re-eval).
 - [ ] Replace CPU-smoke-scale numbers with full-scale Colab results once available.
+- [ ] Reconcile the Boundary Loss row (§5 table) with the completed full-scale
+      λ3 sweep — see the 2026-09-05 caveat above; numbers already live in
+      `paper_acm/main.tex` and `Phase2/Dhinanjaya-Person5/results/`.
 - [ ] Apply §11's colour-highlighting + margin-comment requirement (one colour per author) before Moodle submission — not started on any draft yet.
 - [ ] Rewrite AI-assisted prose (this draft, `related_work.md`, `intro_and_pipeline.md`) substantially in your own words so it counts as your identifiable individual contribution per §11.
 - [ ] Slide deck summarizing this draft — see `slide_deck_outline.md`.
