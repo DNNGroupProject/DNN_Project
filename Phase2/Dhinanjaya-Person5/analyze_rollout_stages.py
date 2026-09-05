@@ -91,10 +91,19 @@ def corr(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def main() -> None:
+    import argparse
+    import time
+
+    p = argparse.ArgumentParser()
+    p.add_argument("--n", type=int, default=3, help="number of held-out images to sample")
+    p.add_argument("--seed", type=int, default=123)
+    args = p.parse_args()
+
     model = load_model()
-    pairs = list_pairs(max_samples=3 * 4, seed=123)[-3:]
+    pairs = list_pairs(max_samples=args.n * 4, seed=args.seed)[-args.n :]
     images, masks = load_pairs(pairs)
 
+    t0 = time.time()
     per_image_rows = []
     for i in range(len(images)):
         x = to_model_input(images[i : i + 1]).to(DEVICE)
@@ -111,13 +120,18 @@ def main() -> None:
             row[f"stage{stage}_vs_rollout"] = corr(up, rollout_map)
             row[f"stage{stage}_vs_mask"] = corr(up, y.astype(np.float32))
         per_image_rows.append(row)
-        print(f"image {i+1}: " + ", ".join(f"{k}={v:.3f}" for k, v in row.items() if k != "image"))
+        if args.n <= 10 or (i + 1) % 10 == 0:
+            elapsed = time.time() - t0
+            print(f"image {i+1}/{args.n} ({elapsed:.1f}s elapsed): " +
+                  ", ".join(f"{k}={v:.3f}" for k, v in row.items() if k != "image"))
 
-    print("\nMean across 3 images:")
+    print(f"\nMean across {args.n} images ({time.time()-t0:.1f}s total):")
     for stage in (1, 2, 3, 4):
-        vr = np.nanmean([r[f"stage{stage}_vs_rollout"] for r in per_image_rows])
-        vm = np.nanmean([r[f"stage{stage}_vs_mask"] for r in per_image_rows])
-        print(f"  stage {stage}: vs_stage4_rollout={vr:.3f}  vs_ground_truth_mask={vm:.3f}")
+        vals_r = [r[f"stage{stage}_vs_rollout"] for r in per_image_rows]
+        vals_m = [r[f"stage{stage}_vs_mask"] for r in per_image_rows]
+        vr, sr = np.nanmean(vals_r), np.nanstd(vals_r)
+        vm, sm = np.nanmean(vals_m), np.nanstd(vals_m)
+        print(f"  stage {stage}: vs_stage4_rollout={vr:.3f}+/-{sr:.3f}  vs_ground_truth_mask={vm:.3f}+/-{sm:.3f}")
 
 
 if __name__ == "__main__":

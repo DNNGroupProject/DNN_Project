@@ -490,12 +490,13 @@ other rows in Table~\ref{tab:results} are computed. (4) \emph{Rollout
 restriction.}
 Restricting Gradient-weighted Attention Rollout to SegFormer's stage-4
 attention avoids the invalid rectangular-matrix case but discards
-information from stages 1--3. A small diagnostic ($n{=}3$ images, raw
-per-stage attention averaged into an $8{\times}8$ grid --- spatial
+information from stages 1--3. A diagnostic over the full 766-image test
+set (raw per-stage attention averaged into an $8{\times}8$ grid --- spatial
 reduction leaves every stage's key/value count at 64) finds stages 1--3
-correlate weakly with the ground-truth mask (mean $r{=}0.20$--$0.31$) versus
-stage 4's $r{=}0.55$, suggesting less mask-relevant signal to begin with
-rather than a large loss, though $n{=}3$ is too small to be conclusive.
+correlate weakly with the ground-truth mask ($r{=}0.10${\small$\pm$}0.20,
+$0.19${\small$\pm$}0.21, $0.12${\small$\pm$}0.27) versus stage 4's
+$r{=}0.52${\small$\pm$}0.31, indicating substantially less mask-relevant
+signal at earlier stages rather than a large discarded loss.
 (5) \emph{Boundary loss / attention interaction.} A $\lambda_3 \in
 \{0.1, 0.2, 0.5\}$ sweep (fixed at $\lambda_2{=}1.0$) finds AAMO drops
 non-monotonically as $\lambda_3$ increases (0.7775, 0.6218, 0.6805 vs. the
