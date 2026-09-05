@@ -291,10 +291,24 @@ generally.
 - **DeepLabV3+ remains smoke-scale** (400 samples / 5 epochs via
   `train_deeplab_multiseed.py`, seed-42 eval) — a full 5,108-image/20-epoch
   run has not been done for this extra baseline.
-- **Rollout restriction.** Restricting Gradient-weighted Attention Rollout
-  to SegFormer's stage-4 attention avoids the invalid rectangular-matrix
-  case but discards information from stages 1–3, whose cost this work does
-  not yet quantify.
+- **Overfitting.** Every full-scale training curve (vanilla + every
+  λ2/λ3-swept variant) shows val loss rising 14–46% past its early-epoch
+  minimum while train metrics keep improving. Vanilla overfits worst (Dice
+  gap 1.7→14.6 points by epoch 20); attention/boundary variants overfit
+  less (5–6→10–12 points), suggesting L_att/L_boundary mildly regularizes.
+  Computed from the committed `training_log_*.csv` files, no new runs.
+- **Resolved 2026-09-05 — Rollout restriction, quantified.** Restricting
+  Gradient-weighted Attention Rollout to SegFormer's stage-4 attention
+  avoids the invalid rectangular-matrix case but discards information from
+  stages 1–3. A diagnostic over the full 766-image test set (raw per-stage
+  attention averaged into an 8×8 grid — spatial reduction leaves every
+  stage's key/value count at 64, making a cross-stage comparison tractable
+  without the invalid rollout recursion) finds stages 1–3 correlate weakly
+  with the ground-truth mask (r=0.10±0.20, 0.19±0.21, 0.12±0.27) versus
+  stage 4's r=0.52±0.31 — indicating substantially less mask-relevant
+  signal at earlier stages rather than a large discarded loss. Ran locally
+  on CPU in ~5 minutes, no GPU/Colab needed
+  (`Phase2/Dhinanjaya-Person5/analyze_rollout_stages.py --n 766`).
 - Qualitative attention-drift figures (`results/attention_drift_figures/`)
   don't yet tell as clean a story as the AAMO number: the vanilla model's
   attention shows a "hot corner" artifact rather than the motivating
