@@ -472,7 +472,11 @@ variants are now trained and evaluated on the full 5{,}108-image dataset for
 threat for those three rows; DeepLabV3+ remains a 200-image smoke-scale
 reference only, so its comparison to the other rows should be read with that
 caveat. The SegFormer checkpoints are early-stopped at their best-validation
-epoch rather than fully converged. (2) \emph{Single seed.} No run has been
+epoch rather than fully converged: every full-scale run overfits past its
+early-epoch optimum (val loss $+$14--46\%), vanilla worst (Dice gap
+1.7$\to$14.6 points by epoch 20) and the attention/boundary variants less
+(gap 5--6$\to$10--12 points), suggesting $L_{att}$/$L_{boundary}$ mildly
+regularizes. (2) \emph{Single seed.} No run has been
 repeated with a different seed, and the $\lambda_2$ sweep that selects
 $\lambda_2{=}1.0$ is itself single-seed, so the reported numbers carry
 unknown variance; Phase 2's multi-seed ablation is required before any
@@ -486,18 +490,20 @@ other rows in Table~\ref{tab:results} are computed. (4) \emph{Rollout
 restriction.}
 Restricting Gradient-weighted Attention Rollout to SegFormer's stage-4
 attention avoids the invalid rectangular-matrix case but discards
-information from stages 1--3, which this work does not yet quantify the
-cost of. (5) \emph{Boundary loss / attention interaction.} A preliminary
-Phase 2 sweep of the boundary-refinement loss weight $\lambda_3 \in
-\{0.1, 0.2, 0.5\}$ (fixed at the $\lambda_2{=}1.0$ winner) finds AAMO drops
-non-monotonically as $\lambda_3$ increases (0.7775, 0.6218, 0.6805 against
-the $\lambda_3{=}0$ baseline's 0.7476) even as test Dice improves (up to
-0.8669 at $\lambda_3{=}0.2$). Best-validation checkpoints for
-$\lambda_3{\ge}0.2$ are selected far earlier in training (epoch 4) than the
-$\lambda_3{\in}\{0,0.1\}$ runs (epoch 11), consistent with $L_{boundary}$'s
-gradient --- which flows through the same shared encoder that produces the
-attention maps --- competing with $L_{att}$ for representation capacity;
-this is single-seed evidence at batch size 1 and not yet disentangled from
+information from stages 1--3. A small diagnostic ($n{=}3$ images, raw
+per-stage attention averaged into an $8{\times}8$ grid --- spatial
+reduction leaves every stage's key/value count at 64) finds stages 1--3
+correlate weakly with the ground-truth mask (mean $r{=}0.20$--$0.31$) versus
+stage 4's $r{=}0.55$, suggesting less mask-relevant signal to begin with
+rather than a large loss, though $n{=}3$ is too small to be conclusive.
+(5) \emph{Boundary loss / attention interaction.} A $\lambda_3 \in
+\{0.1, 0.2, 0.5\}$ sweep (fixed at $\lambda_2{=}1.0$) finds AAMO drops
+non-monotonically as $\lambda_3$ increases (0.7775, 0.6218, 0.6805 vs. the
+$\lambda_3{=}0$ baseline's 0.7476) even as test Dice improves (to 0.8669 at
+$\lambda_3{=}0.2$). Best-val checkpoints for $\lambda_3{\ge}0.2$ land far
+earlier (epoch 4) than $\lambda_3{\in}\{0,0.1\}$ (epoch 11), consistent with
+$L_{boundary}$'s gradient competing with $L_{att}$ through the shared
+encoder --- single-seed evidence, not yet disentangled from
 checkpoint-selection noise.
 
 \textbf{Broader impact.} Forest-cover monitoring increasingly informs
@@ -521,8 +527,8 @@ Boundary Refinement Module ($\lambda_3{=}0.2$, validation-swept) further
 improves Dice/IoU at a further cost to AAMO, an interaction not yet
 disentangled from single-seed noise (\S\ref{sec:discussion}). Future work
 will compare the MSE and KL-divergence $L_{att}$ formulations, extend the
-$\lambda_2$/$\lambda_3$ sweeps to multiple seeds, and address the residual
-overfitting visible in the training curves.
+$\lambda_2$/$\lambda_3$ sweeps to multiple seeds, and close the overfitting
+gap quantified above via weight decay or an LR schedule.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
