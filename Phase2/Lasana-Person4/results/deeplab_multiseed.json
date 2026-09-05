@@ -16,7 +16,7 @@
     "status": "ok"
   },
   {
-    "model": "DeepLabV3+ (MobileNetV3) \u2014 extra baseline",
+    "model": "DeepLabV3+ (MobileNetV3) — extra baseline",
     "seed": 43,
     "dice": 0.8073,
     "iou": 0.6769,
@@ -32,7 +32,7 @@
     "status": "ok"
   },
   {
-    "model": "DeepLabV3+ (MobileNetV3) \u2014 extra baseline",
+    "model": "DeepLabV3+ (MobileNetV3) — extra baseline",
     "seed": 44,
     "dice": 0.7693,
     "iou": 0.6251,
